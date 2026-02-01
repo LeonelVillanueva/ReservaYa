@@ -1,0 +1,41 @@
+Sistema de reservas de restaurante
+Análisis del Sistema Tradicional
+¿Para qué sirve este sistema?
+= Permite a los comensales realizar sus reservas de manera anticipada y ordenada para mantener un control del espacio disponible dentro del restaurante lo que permite manejar mejor el flujo de trabajo y manejo de las horas con mas concurrencia de clientes para el restaurante.
+¿Qué problemas presenta actualmente?
+= 1. Mal manejo de reservas lo que puede incurrir en sobre reservas lo cual implica un mal manejo de mesas.
+2. Alto índice de clientes “no-shows” (Reservas sin pagos anticipados)
+3. Dependencia de recurso humano (Personal atendiendo llamadas, etc)
+4. Información poco clara y no actualizada (Menus no actualizados, falta de avisos por existencias agotadas)
+5. Sin personalización (No hay un historial para evaluar reservas previas, sin beneficios por fidelidad)
+
+¿Por qué es “común” o poco innovador hoy en día?
+ = 1. Se mantiene desactualizados
+2. Muchos de los procesos utilizan mucho recurso humano ya que el proceso solamente se transforma de registro manual al área digital.
+3. No se usan patrones de demanda para tomar decisiones inteligentes (Comidas menos consumidas, rotación de menú, especiales del día)
+4. Muchos de los sistemas no resuelven problemas como el “No-shows” (El cliente no se presenta a la reserva ya que en la mayoría es de forma gratuita)
+5. Mala asignación de mesas (Se reservan mesas que ya están ocupadas “Overbooking”)
+6. Falta de coordinación con cocina (Pedidos equivocados o no siguen las indicaciones)
+
+Propuesta de Innovación Tecnológica
+¿Qué tecnología usarían?
+1.	Inteligencia Artificial (Mejor toma de decisiones basada en patrones de consumo)
+2.	Apps Móviles (Mapa visual para la gestión de mesas)
+3.	Automatización Inteligente (Reducción de errores a la hora de realizar una cita “Fechas erróneas”, “Faltas de pago”)
+4.	Asistentes virtuales (Flexibilidad para Citas espontaneas, Reducción de No-Shows “Recordatorios”)
+
+¿Qué problema resuelve esa innovación?
+= 1.  Reducción de “No-show” de clientes (Pagos anticipados, recordatorios automáticos, confirmaciones inteligentes que evitan fechas equivocadas)
+2. Eliminación de overbooking (Presentación de mapa visual mediante la app móvil en tiempo real para la visualización del flujo de mesas)
+3. Menor dependencia del recurso humano (Menos personal atendiendo reservas manuales, reducción de errores manuales, menos carga operativa del personal)
+4. Mayor coordinación entre el salón y área de cocina (Información centralizada y actualizada, Menús con información completa, gestión de productos en existencia)
+5. Falta de personalización y fidelización (Perfiles de clientes, reconocimiento de hábitos, beneficios personalizados a clientes recurrentes)
+
+¿Por qué mejora la experiencia del usuario?
+= 1. Previene confusión por falta de información/información poco clara o desactualizada
+2. Se reduce el esfuerzo del usuario (Modificación de la reserva o cancelación sin llamadas tardadas)
+3. Se aumenta la confiabilidad de la reserva (Evita overbooking, muestra la disponibilidad en tiempo real)
+4. Se disminuyen tiempos de espera (Asignación de mesas, Aviso cuando ya hay disponibilidad)
+5. Experiencia personalizada (Historial de reservas previas, visualización de productos consumidos)
+6. Mejora la comunicación con el restaurante (Notificaciones claras, Información actualizada, Avisos ante imprevistos)
+7. Brinda flexibilidad y control al cliente
