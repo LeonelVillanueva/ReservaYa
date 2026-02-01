@@ -1,0 +1,22 @@
+# Documentación local
+docs/
+
+# Variables de entorno
+.env
+*.env.local
+
+# Dependencias
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
