@@ -68,6 +68,8 @@ export const authApi = {
   register: (data) => api.post('/auth/register', data),
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
+  verificarEmail: (codigo) => api.post('/auth/verificar-email', { codigo }),
+  reenviarCodigo: () => api.post('/auth/reenviar-codigo'),
 }
 
 export const usuariosApi = {

@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen flex flex-col">
-    <header class="bg-white shadow-sm border-b border-gray-100">
+    <header v-if="!hideHeader" class="bg-white shadow-sm border-b border-gray-100">
       <nav class="max-w-7xl mx-auto px-4 py-4">
         <div class="flex justify-between items-center">
           <router-link to="/" class="flex items-center gap-2">
@@ -24,7 +24,7 @@
       <slot />
     </main>
 
-    <footer class="bg-gray-100 border-t border-gray-200 py-6 mt-auto">
+    <footer v-if="!hideFooter" class="bg-gray-100 border-t border-gray-200 py-6 mt-auto">
       <div class="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm">
         <img src="/logos/IMGReservaYa.webp" alt="ReservaYa" class="h-5 object-contain inline-block opacity-70" />
         <span class="ml-1">© {{ new Date().getFullYear() }}</span>
@@ -36,6 +36,11 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+
+const props = defineProps({
+  hideHeader: { type: Boolean, default: false },
+  hideFooter: { type: Boolean, default: false }
+})
 
 const router = useRouter()
 const authStore = useAuthStore()

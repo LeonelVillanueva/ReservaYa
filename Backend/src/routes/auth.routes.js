@@ -14,4 +14,10 @@ router.post('/logout', authController.logout);
 // GET /api/auth/me - Obtener usuario actual
 router.get('/me', authController.getMe);
 
+// POST /api/auth/verificar-email - Verificar correo con código de 6 caracteres (requiere token)
+router.post('/verificar-email', authController.verificarEmail);
+
+// POST /api/auth/reenviar-codigo - Reenviar código de verificación (requiere token)
+router.post('/reenviar-codigo', authController.reenviarCodigo);
+
 module.exports = router;

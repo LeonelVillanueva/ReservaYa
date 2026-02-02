@@ -1,4 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect width="100" height="100" rx="20" fill="#ed751a"/>
-  <text x="50" y="68" font-size="50" text-anchor="middle" fill="white">M</text>
+  <!-- Favicon basado en el logo IMGReservaYa -->
+  <defs>
+    <clipPath id="rounded">
+      <rect width="100" height="100" rx="20" ry="20" />
+    </clipPath>
+  </defs>
+  <rect width="100" height="100" rx="20" ry="20" fill="#ffffff" />
+  <image
+    href="logos/IMGReservaYa.webp"
+    x="0"
+    y="0"
+    width="100"
+    height="100"
+    preserveAspectRatio="xMidYMid meet"
+    clip-path="url(#rounded)"
+  />
 </svg>

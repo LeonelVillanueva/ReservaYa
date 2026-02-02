@@ -11,6 +11,18 @@ const router = createRouter({
       meta: { title: 'Iniciar sesión', guest: true }
     },
     {
+      path: '/registro',
+      name: 'register',
+      component: () => import('@/views/auth/RegisterView.vue'),
+      meta: { title: 'Crear cuenta', guest: true }
+    },
+    {
+      path: '/verificar-correo',
+      name: 'verificar-correo',
+      component: () => import('@/views/auth/VerificarCorreoView.vue'),
+      meta: { title: 'Verificar correo', requiresVerification: true }
+    },
+    {
       path: '/inicio',
       name: 'home',
       component: () => import('@/views/HomeView.vue'),
@@ -25,18 +37,36 @@ const router = createRouter({
   ]
 })
 
-router.beforeEach((to, from, next) => {
-  document.title = `${to.meta.title || 'MesaSegura'} - Sistema de Reservas`
-  
+router.beforeEach(async (to, from, next) => {
+  document.title = `${to.meta.title || 'ReservaYa'} - Sistema de Reservas`
+
   const authStore = useAuthStore()
-  
+
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next('/')
-  } else if (to.meta.guest && authStore.isAuthenticated) {
-    next('/inicio')
-  } else {
-    next()
+    return
   }
+  if (to.meta.guest && authStore.isAuthenticated) {
+    if (authStore.emailVerificado) {
+      next('/inicio')
+    } else {
+      next('/verificar-correo')
+    }
+    return
+  }
+  if (to.meta.requiresAuth && authStore.isAuthenticated && !authStore.emailVerificado && to.name !== 'verificar-correo') {
+    next('/verificar-correo')
+    return
+  }
+  if (to.meta.requiresVerification && !authStore.token) {
+    next('/')
+    return
+  }
+  if (to.meta.requiresVerification && authStore.emailVerificado) {
+    next('/inicio')
+    return
+  }
+  next()
 })
 
 export default router
