@@ -4,7 +4,7 @@
       <nav class="max-w-7xl mx-auto px-4 py-4">
         <div class="flex justify-between items-center">
           <router-link to="/" class="flex items-center gap-2">
-            <img src="/logos/IMGReservaYa.webp" alt="ReservaYa" class="h-9 object-contain" />
+            <img src="/logos/Logo_letras.webp" alt="ReservaYa" class="h-9 object-contain" />
           </router-link>
           <div class="flex items-center gap-4">
             <template v-if="authStore.isAuthenticated">
@@ -26,7 +26,7 @@
 
     <footer v-if="!hideFooter" class="bg-gray-100 border-t border-gray-200 py-6 mt-auto">
       <div class="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm">
-        <img src="/logos/IMGReservaYa.webp" alt="ReservaYa" class="h-5 object-contain inline-block opacity-70" />
+        <img src="/logos/Logo_letras.webp" alt="ReservaYa" class="h-5 object-contain inline-block opacity-70" />
         <span class="ml-1">© {{ new Date().getFullYear() }}</span>
       </div>
     </footer>

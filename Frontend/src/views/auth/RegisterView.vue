@@ -23,9 +23,12 @@
           v-if="error"
           class="mb-4"
           variant="destructive"
-          title="No se pudo crear la cuenta"
+          :title="errorCode === 'EMAIL_YA_REGISTRADO' ? 'Correo ya registrado' : 'No se pudo crear la cuenta'"
         >
           {{ error }}
+          <p v-if="errorCode === 'EMAIL_YA_REGISTRADO'" class="mt-2 text-xs">
+            <router-link to="/" class="font-medium underline hover:no-underline">Inicia sesión</router-link> si ya tienes cuenta.
+          </p>
         </Alert>
 
         <form @submit.prevent="handleRegister" class="space-y-4">
@@ -276,6 +279,7 @@ const showPassword = ref(false)
 const showPasswordConfirm = ref(false)
 
 const error = ref('')
+const errorCode = ref('')
 const loading = ref(false)
 const mostrarModalUsername = ref(false)
 const usernameGenerado = ref('')
@@ -350,6 +354,7 @@ function onTelefonoInput(event) {
 
 async function handleRegister() {
   error.value = ''
+  errorCode.value = ''
 
   // Validar nombre y apellido (solo letras y espacios)
   if (!nombre.value || limpiarNombre(nombre.value).length < 2) {
@@ -401,6 +406,7 @@ async function handleRegister() {
     usernameGenerado.value = authStore.user?.username || ''
   } catch (err) {
     error.value = err?.error || err?.message || 'No se pudo crear la cuenta'
+    errorCode.value = err?.code || ''
   } finally {
     loading.value = false
   }

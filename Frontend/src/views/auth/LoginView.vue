@@ -17,14 +17,16 @@
       >
         <h1 class="text-2xl font-bold text-gray-900 mb-6">Iniciar sesión</h1>
 
-        <Alert
-          v-if="error"
-          class="mb-4"
-          variant="destructive"
-          title="Error al iniciar sesión"
-        >
-          {{ error }}
-        </Alert>
+        <Transition name="alert">
+          <Alert
+            v-if="error"
+            class="mb-4"
+            variant="destructive"
+            title="Error al iniciar sesión"
+          >
+            {{ error }}
+          </Alert>
+        </Transition>
 
         <form @submit.prevent="handleLogin" class="space-y-4">
           <div>
@@ -57,7 +59,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
 import Alert from '@/components/ui/Alert.vue'
@@ -70,6 +72,19 @@ const username = ref('')
 const password = ref('')
 const error = ref('')
 const loading = ref(false)
+let errorTimeoutId = null
+
+function clearErrorAfter(ms) {
+  if (errorTimeoutId) clearTimeout(errorTimeoutId)
+  errorTimeoutId = setTimeout(() => {
+    error.value = ''
+    errorTimeoutId = null
+  }, ms)
+}
+
+onUnmounted(() => {
+  if (errorTimeoutId) clearTimeout(errorTimeoutId)
+})
 
 async function handleLogin() {
   error.value = ''
@@ -83,8 +98,22 @@ async function handleLogin() {
       return
     }
     error.value = err?.error || err?.message || 'Credenciales incorrectas'
+    username.value = ''
+    password.value = ''
+    clearErrorAfter(5000)
   } finally {
     loading.value = false
   }
 }
 </script>
+
+<style scoped>
+.alert-enter-active,
+.alert-leave-active {
+  transition: opacity 0.25s ease;
+}
+.alert-enter-from,
+.alert-leave-to {
+  opacity: 0;
+}
+</style>

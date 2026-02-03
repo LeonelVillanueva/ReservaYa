@@ -64,7 +64,11 @@ const authController = {
 
       if (errExiste) throw errExiste;
       if (existente) {
-        return res.status(409).json({ success: false, error: 'Ya existe una cuenta con este email' });
+        return res.status(409).json({
+          success: false,
+          error: 'Ya existe una cuenta con este correo. Usa otro correo o inicia sesión.',
+          code: 'EMAIL_YA_REGISTRADO',
+        });
       }
 
       const username = await generarUsernameUnico(nombre, apellido);
