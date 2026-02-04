@@ -1,174 +1,129 @@
 const { supabase } = require('../config/supabase');
 const { ROLES } = require('../utils/constants');
+const { resolveUserIdFromHeader } = require('../utils/token.utils');
 
 /**
- * Middleware para verificar autenticación
- * En desarrollo: pasa sin verificar si no hay token
- * En producción: requiere token válido
+ * Middleware de autenticación unificado:
+ * - Valida token firmado (sess.) o legacy (token-).
+ * - Carga siempre el usuario desde la BD (rol_id, activo, etc.), no se confía en el cliente.
+ * - En desarrollo sin token: opcionalmente permite continuar con req.user = null.
  */
 const verificarAuth = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    
-    // Si no hay header de autorización
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      // En desarrollo, permitir continuar sin autenticación
-      if (process.env.NODE_ENV === 'development') {
-        req.user = null;
-        return next();
-      }
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Token no proporcionado' 
+    const userId = resolveUserIdFromHeader(req.headers.authorization);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Token no proporcionado o inválido',
       });
     }
-    
-    const token = authHeader.split(' ')[1];
-    
-    // Verificar token con Supabase Auth
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Token inválido o expirado' 
-      });
-    }
-    
-    // Obtener datos adicionales del usuario desde nuestra tabla
-    const { data: usuarioData, error: errUsuario } = await supabase
+
+    const { data: user, error } = await supabase
       .from('usuarios')
-      .select('id, email, nombre, apellido, rol_id, activo')
-      .eq('email', user.email)
+      .select('id, email, nombre, apellido, username, rol_id, activo, email_verificado')
+      .eq('id', userId)
       .single();
-    
-    if (errUsuario || !usuarioData) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Usuario no encontrado en el sistema' 
+
+    if (error || !user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Usuario no encontrado',
       });
     }
-    
-    if (!usuarioData.activo) {
-      return res.status(403).json({ 
-        success: false, 
-        error: 'Usuario desactivado' 
+
+    if (!user.activo) {
+      return res.status(403).json({
+        success: false,
+        error: 'Usuario desactivado',
       });
     }
-    
-    // Adjuntar usuario al request
-    req.user = {
-      ...usuarioData,
-      authUser: user
-    };
-    
+
+    req.user = user;
     next();
-  } catch (error) {
-    console.error('Error en verificarAuth:', error);
-    res.status(401).json({ 
-      success: false, 
-      error: 'Error de autenticación' 
+  } catch (err) {
+    console.error('[auth.middleware] Error:', err.message);
+    res.status(401).json({
+      success: false,
+      error: 'Error de autenticación',
     });
   }
 };
 
 /**
- * Middleware para verificar rol del usuario
+ * Verifica que el usuario tenga uno de los roles permitidos.
  * Uso: verificarRol(ROLES.MANAGER) o verificarRol(ROLES.MANAGER, ROLES.AGENTE_IA)
+ * Debe usarse después de verificarAuth.
  */
 const verificarRol = (...rolesPermitidos) => {
   return (req, res, next) => {
-    // Si no hay usuario (desarrollo sin auth)
     if (!req.user) {
-      if (process.env.NODE_ENV === 'development') {
-        return next();
-      }
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Autenticación requerida' 
+      return res.status(401).json({
+        success: false,
+        error: 'Autenticación requerida',
       });
     }
-    
-    // Verificar si el rol del usuario está en los permitidos
     if (!rolesPermitidos.includes(req.user.rol_id)) {
-      return res.status(403).json({ 
-        success: false, 
-        error: 'No tiene permisos para esta acción' 
+      return res.status(403).json({
+        success: false,
+        error: 'No tiene permisos para esta acción',
       });
     }
-    
     next();
   };
 };
 
 /**
- * Middleware para rutas que solo el propio usuario o manager pueden acceder
+ * Rutas que solo el propio usuario o un manager pueden acceder.
  */
 const verificarPropietarioOManager = (paramId = 'id') => {
   return (req, res, next) => {
-    // Si no hay usuario (desarrollo)
     if (!req.user) {
-      if (process.env.NODE_ENV === 'development') {
-        return next();
-      }
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Autenticación requerida' 
+      return res.status(401).json({
+        success: false,
+        error: 'Autenticación requerida',
       });
     }
-    
-    const recursoId = parseInt(req.params[paramId]);
+    const recursoId = parseInt(req.params[paramId], 10);
     const esManager = req.user.rol_id === ROLES.MANAGER;
     const esPropietario = req.user.id === recursoId;
-    
     if (!esManager && !esPropietario) {
-      return res.status(403).json({ 
-        success: false, 
-        error: 'No tiene permisos para acceder a este recurso' 
+      return res.status(403).json({
+        success: false,
+        error: 'No tiene permisos para acceder a este recurso',
       });
     }
-    
     next();
   };
 };
 
 /**
- * Middleware opcional: solo verifica si hay token, no bloquea si no hay
+ * Opcional: si hay token válido pone req.user; si no, req.user = null. No responde 401.
  */
 const authOpcional = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const userId = resolveUserIdFromHeader(req.headers.authorization);
+    if (!userId) {
       req.user = null;
       return next();
     }
-    
-    const token = authHeader.split(' ')[1];
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (!error && user) {
-      const { data: usuarioData } = await supabase
-        .from('usuarios')
-        .select('id, email, nombre, apellido, rol_id, activo')
-        .eq('email', user.email)
-        .single();
-      
-      req.user = usuarioData ? { ...usuarioData, authUser: user } : null;
-    } else {
-      req.user = null;
-    }
-    
+    const { data: user } = await supabase
+      .from('usuarios')
+      .select('id, email, nombre, apellido, username, rol_id, activo, email_verificado')
+      .eq('id', userId)
+      .eq('activo', true)
+      .single();
+    req.user = user || null;
     next();
-  } catch (error) {
+  } catch {
     req.user = null;
     next();
   }
 };
 
-module.exports = { 
-  verificarAuth, 
-  verificarRol, 
+module.exports = {
+  verificarAuth,
+  verificarRol,
   verificarPropietarioOManager,
-  authOpcional
+  authOpcional,
 };

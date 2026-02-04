@@ -31,11 +31,11 @@
         <form @submit.prevent="handleLogin" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
-            <input v-model="username" type="text" class="input bg-white/80" placeholder="tu_usuario" required autocomplete="username" />
+            <input v-model="username" type="text" class="input bg-white/80" required autocomplete="username" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-            <input v-model="password" type="password" class="input bg-white/80" placeholder="••••••••" required />
+            <input v-model="password" type="password" class="input bg-white/80" placeholder="•••••••••••" required />
           </div>
           <button type="submit" class="btn-primary w-full" :disabled="loading">
             {{ loading ? 'Entrando...' : 'Entrar' }}
@@ -52,8 +52,8 @@
     <!-- Credenciales de prueba (solo desarrollo) -->
     <div class="fixed bottom-4 left-4 bg-gray-800/90 text-gray-200 text-xs rounded-lg px-3 py-2 shadow-lg max-w-[260px]">
       <p class="font-semibold text-gray-300 mb-1.5">Pruebas</p>
-      <p class="mb-0.5"><span class="text-gray-400">Admin:</span> administradorsistema1 / admin</p>
-      <p><span class="text-gray-400">Cliente:</span> usuarioprueba2 / usuario</p>
+      <p class="mb-0.5"><span class="text-gray-400">Admin:</span> administradorsistema1/ admin</p>
+      <p><span class="text-gray-400">Cliente:</span> usuarioprueba2/ usuario</p>
     </div>
   </MainLayout>
 </template>

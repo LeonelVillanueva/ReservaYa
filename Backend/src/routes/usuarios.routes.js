@@ -1,33 +1,37 @@
 const express = require('express');
 const router = express.Router();
 const usuariosController = require('../controllers/usuarios.controller');
+const { verificarAuth, verificarRol, verificarPropietarioOManager } = require('../middlewares/auth.middleware');
+const { ROLES } = require('../utils/constants');
 
-// GET /api/usuarios - Listar usuarios (manager)
-router.get('/', usuariosController.getAll);
+router.use(verificarAuth);
 
-// GET /api/usuarios/:id - Obtener usuario
-router.get('/:id', usuariosController.getById);
+// GET /api/usuarios - Listar usuarios (solo manager)
+router.get('/', verificarRol(ROLES.MANAGER), usuariosController.getAll);
+
+// GET /api/usuarios/:id - Obtener usuario (propietario o manager)
+router.get('/:id', verificarPropietarioOManager('id'), usuariosController.getById);
 
 // GET /api/usuarios/:id/perfil - Obtener perfil del cliente
-router.get('/:id/perfil', usuariosController.getPerfil);
+router.get('/:id/perfil', verificarPropietarioOManager('id'), usuariosController.getPerfil);
 
-// PUT /api/usuarios/:id/perfil - Actualizar perfil
-router.put('/:id/perfil', usuariosController.updatePerfil);
+// PUT /api/usuarios/:id/perfil - Actualizar perfil (solo propietario o manager)
+router.put('/:id/perfil', verificarPropietarioOManager('id'), usuariosController.updatePerfil);
 
 // === ALERGIAS DEL USUARIO ===
 
-// GET /api/usuarios/:id/alergias - Obtener alergias del usuario
-router.get('/:id/alergias', usuariosController.getAlergias);
+// GET /api/usuarios/:id/alergias - Obtener alergias (propietario o manager)
+router.get('/:id/alergias', verificarPropietarioOManager('id'), usuariosController.getAlergias);
 
-// POST /api/usuarios/:id/alergias - Registrar alergias
-router.post('/:id/alergias', usuariosController.setAlergias);
+// POST /api/usuarios/:id/alergias - Registrar alergias (propietario o manager)
+router.post('/:id/alergias', verificarPropietarioOManager('id'), usuariosController.setAlergias);
 
 // === PUNTOS / FIDELIZACIÓN ===
 
-// GET /api/usuarios/:id/puntos - Obtener saldo de puntos
-router.get('/:id/puntos', usuariosController.getPuntos);
+// GET /api/usuarios/:id/puntos - Obtener saldo de puntos (propietario o manager)
+router.get('/:id/puntos', verificarPropietarioOManager('id'), usuariosController.getPuntos);
 
-// GET /api/usuarios/:id/historial-reservas - Historial de reservas
-router.get('/:id/historial-reservas', usuariosController.getHistorialReservas);
+// GET /api/usuarios/:id/historial-reservas - Historial de reservas (propietario o manager)
+router.get('/:id/historial-reservas', verificarPropietarioOManager('id'), usuariosController.getHistorialReservas);
 
 module.exports = router;

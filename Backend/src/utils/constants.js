@@ -8,7 +8,8 @@ const ESTADOS_RESERVA = {
   CONFIRMADA: 2,
   CANCELADA: 3,
   COMPLETADA: 4,
-  NO_SHOW: 5
+  NO_SHOW: 5,
+  EN_GRACIA: 6
 };
 
 const ESTADOS_RESERVA_NOMBRES = {
@@ -16,7 +17,8 @@ const ESTADOS_RESERVA_NOMBRES = {
   2: 'confirmada',
   3: 'cancelada',
   4: 'completada',
-  5: 'no_show'
+  5: 'no_show',
+  6: 'en_gracia'
 };
 
 // Roles (deben coincidir con roles en BD)

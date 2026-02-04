@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const { supabase } = require('../config/supabase');
 const { ROLES } = require('../utils/constants');
+const { createToken, resolveUserIdFromHeader } = require('../utils/token.utils');
 const { emailService } = require('../services');
 
 /** Genera un código alfanumérico de 6 caracteres */
@@ -32,16 +33,6 @@ async function generarUsernameUnico(nombre, apellido) {
     if (!existente) return username;
   }
   return `${base}${Date.now().toString().slice(-6)}`;
-}
-
-/** Parsea el token de prueba (token-{userId}-{timestamp}) y devuelve userId o null */
-function parsearTokenCustom(authHeader) {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
-  const token = authHeader.split(' ')[1];
-  if (!token?.startsWith('token-')) return null;
-  const parts = token.split('-');
-  const userId = parseInt(parts[1], 10);
-  return !isNaN(userId) && userId > 0 ? userId : null;
 }
 
 const authController = {
@@ -102,7 +93,7 @@ const authController = {
         codigo,
       }).catch((err) => console.error('[auth.register] Error al enviar correo de verificación:', err));
 
-      const token = `token-${user.id}-${Date.now()}`;
+      const token = createToken(user.id);
 
       res.status(201).json({
         success: true,
@@ -135,7 +126,7 @@ const authController = {
 
       const { data: user, error } = await supabase
         .from('usuarios')
-        .select('id, email, nombre, apellido, username, rol_id, activo, password_hash, email_verificado')
+        .select('id, email, nombre, apellido, telefono, username, rol_id, activo, password_hash, email_verificado')
         .eq('username', usuarioIngresado)
         .eq('activo', true)
         .single();
@@ -156,7 +147,7 @@ const authController = {
       }
 
       if (!user.email_verificado) {
-        const token = `token-${user.id}-${Date.now()}`;
+        const token = createToken(user.id);
         return res.status(403).json({
           success: false,
           error: 'Debes verificar tu correo antes de iniciar sesión',
@@ -167,6 +158,7 @@ const authController = {
             email: user.email,
             nombre: user.nombre,
             apellido: user.apellido,
+            telefono: user.telefono ?? null,
             username: user.username,
             rol_id: user.rol_id,
             email_verificado: false,
@@ -174,7 +166,7 @@ const authController = {
         });
       }
 
-      const token = `token-${user.id}-${Date.now()}`;
+      const token = createToken(user.id);
       res.json({
         success: true,
         token,
@@ -183,6 +175,7 @@ const authController = {
           email: user.email,
           nombre: user.nombre,
           apellido: user.apellido,
+          telefono: user.telefono ?? null,
           username: user.username,
           rol_id: user.rol_id,
           email_verificado: true,
@@ -202,17 +195,17 @@ const authController = {
     }
   },
 
-  // GET /api/auth/me — token custom: token-{userId}-{timestamp}
+  // GET /api/auth/me — token firmado (sess.) o legacy (token-)
   async getMe(req, res) {
     try {
-      const userId = parsearTokenCustom(req.headers.authorization);
+      const userId = resolveUserIdFromHeader(req.headers.authorization);
       if (!userId) {
         return res.status(401).json({ success: false, error: 'Token no proporcionado o inválido' });
       }
 
       const { data: user, error } = await supabase
         .from('usuarios')
-        .select('id, email, nombre, apellido, username, rol_id, activo, email_verificado')
+        .select('id, email, nombre, apellido, telefono, username, rol_id, activo, email_verificado')
         .eq('id', userId)
         .eq('activo', true)
         .single();
@@ -226,6 +219,7 @@ const authController = {
         email: user.email,
         nombre: user.nombre,
         apellido: user.apellido,
+        telefono: user.telefono ?? null,
         username: user.username,
         rol_id: user.rol_id,
         email_verificado: user.email_verificado ?? false,
@@ -238,7 +232,7 @@ const authController = {
   // POST /api/auth/verificar-email — requiere token (usuario recién registrado o login sin verificar)
   async verificarEmail(req, res) {
     try {
-      const userId = parsearTokenCustom(req.headers.authorization);
+      const userId = resolveUserIdFromHeader(req.headers.authorization);
       if (!userId) {
         return res.status(401).json({ success: false, error: 'Token no proporcionado o inválido' });
       }
@@ -307,7 +301,7 @@ const authController = {
   // POST /api/auth/reenviar-codigo — requiere token
   async reenviarCodigo(req, res) {
     try {
-      const userId = parsearTokenCustom(req.headers.authorization);
+      const userId = resolveUserIdFromHeader(req.headers.authorization);
       if (!userId) {
         return res.status(401).json({ success: false, error: 'Token no proporcionado o inválido' });
       }

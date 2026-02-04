@@ -76,9 +76,9 @@ const esFechaHoraFutura = (fecha, hora) => {
   return fechaHoraObj > ahora;
 };
 
-// Obtener día de la semana (0=Domingo, 6=Sábado)
+// Obtener día de la semana (0=Domingo, 6=Sábado) a partir de fecha YYYY-MM-DD
 const obtenerDiaSemana = (fecha) => {
-  return new Date(fecha).getDay();
+  return new Date(fecha + 'T12:00:00').getDay();
 };
 
 // Sumar días a una fecha

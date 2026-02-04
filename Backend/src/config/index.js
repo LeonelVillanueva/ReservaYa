@@ -17,6 +17,9 @@ const config = {
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY
   },
   
+  // Token de sesión (firmado). En producción usar TOKEN_SECRET de al menos 16 caracteres.
+  tokenSecret: process.env.TOKEN_SECRET || 'dev-secret-cambiar-en-produccion',
+
   // CORS
   cors: {
     origin: process.env.CORS_ORIGIN || '*',

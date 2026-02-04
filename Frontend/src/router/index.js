@@ -33,6 +33,41 @@ const router = createRouter({
       name: 'reserva-nueva',
       component: () => import('@/views/reservas/ReservaNuevaView.vue'),
       meta: { title: 'Nueva reserva', requiresAuth: true }
+    },
+    {
+      path: '/admin',
+      component: () => import('@/layouts/ManagerLayout.vue'),
+      meta: { requiresAuth: true, requiresManager: true },
+      children: [
+        {
+          path: '',
+          name: 'admin',
+          component: () => import('@/views/manager/AdminDashboardView.vue'),
+          meta: { title: 'Panel admin', requiresAuth: true, requiresManager: true }
+        },
+        {
+          path: 'configuraciones',
+          name: 'admin-configuraciones',
+          component: () => import('@/views/manager/ConfiguracionesView.vue'),
+          meta: { title: 'Configuraciones', requiresAuth: true, requiresManager: true }
+        },
+        {
+          path: 'mesas',
+          name: 'admin-mesas',
+          component: () => import('@/views/manager/MesasView.vue'),
+          meta: { title: 'Mesas', requiresAuth: true, requiresManager: true }
+        },
+        {
+          path: 'panorama-mesas',
+          name: 'admin-panorama-mesas',
+          component: () => import('@/views/manager/PanoramaMesasView.vue'),
+          meta: { title: 'Panorama de mesas', requiresAuth: true, requiresManager: true }
+        }
+      ]
+    },
+    {
+      path: '/configuraciones',
+      redirect: '/admin/configuraciones'
     }
   ]
 })
@@ -42,8 +77,18 @@ router.beforeEach(async (to, from, next) => {
 
   const authStore = useAuthStore()
 
+  // Si hay token pero el usuario aún no está cargado (p. ej. tras F5), cargar primero
+  // para no redirigir a verificar-correo por tener emailVerificado en false
+  if (authStore.token && !authStore.user) {
+    await authStore.fetchUser()
+  }
+
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next('/')
+    return
+  }
+  if (to.meta.requiresManager && !authStore.esManager) {
+    next('/inicio')
     return
   }
   if (to.meta.guest && authStore.isAuthenticated) {

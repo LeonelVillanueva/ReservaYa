@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const pedidosController = require('../controllers/pedidos.controller');
+const { verificarAuth } = require('../middlewares/auth.middleware');
+
+router.use(verificarAuth);
 
 // GET /api/pedidos - Listar pedidos (query: mesa_id, reserva_id, estado)
 router.get('/', pedidosController.getAll);

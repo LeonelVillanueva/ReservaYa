@@ -1,26 +1,43 @@
 const { supabase } = require('../config/supabase');
+const { ROLES, ESTADOS_RESERVA } = require('../utils/constants');
+const reservasService = require('../services/reservas.service');
+const { fechaHoy, sumarDias } = require('../utils/date.utils');
+
+// Helper: solo el dueño de la reserva o un manager pueden modificar (fuera del objeto para no depender de "this" en rutas)
+async function assertPuedeModificarReserva(req, id) {
+  const { data: r } = await supabase.from('reservas').select('usuario_id').eq('id', id).single();
+  if (!r) return { error: 'Reserva no encontrada', status: 404 };
+  const esManager = req.user?.rol_id === ROLES.MANAGER;
+  if (!esManager && r.usuario_id !== req.user.id) return { error: 'No tiene permisos para esta reserva', status: 403 };
+  return {};
+}
 
 const reservasController = {
-  // GET /api/reservas
+  // GET /api/reservas — clientes solo ven las propias; manager puede filtrar por usuario_id
   async getAll(req, res) {
     try {
       const { fecha, estado_id, usuario_id } = req.query;
-      
+      const esManager = req.user?.rol_id === ROLES.MANAGER;
+
       let query = supabase
         .from('reservas')
         .select(`
           *,
-          usuario:usuarios!usuario_id(id, nombre, apellido, email),
+          usuario:usuarios!usuario_id(id, nombre, apellido, email, telefono),
           estado:estados_reserva(id, nombre),
           mesa:mesas(id, numero_mesa, capacidad)
         `);
-      
+
+      if (!esManager) {
+        query = query.eq('usuario_id', req.user.id);
+      } else if (usuario_id) {
+        query = query.eq('usuario_id', usuario_id);
+      }
       if (fecha) query = query.eq('fecha', fecha);
       if (estado_id) query = query.eq('estado_id', estado_id);
-      if (usuario_id) query = query.eq('usuario_id', usuario_id);
-      
+
       const { data, error } = await query.order('fecha', { ascending: true }).order('hora', { ascending: true });
-      
+
       if (error) throw error;
       res.json(data);
     } catch (error) {
@@ -28,11 +45,12 @@ const reservasController = {
     }
   },
 
-  // GET /api/reservas/:id
+  // GET /api/reservas/:id — cliente solo puede ver sus propias reservas
   async getById(req, res) {
     try {
       const { id } = req.params;
-      
+      const esManager = req.user?.rol_id === ROLES.MANAGER;
+
       const { data, error } = await supabase
         .from('reservas')
         .select(`
@@ -45,52 +63,108 @@ const reservasController = {
         `)
         .eq('id', id)
         .single();
-      
+
       if (error) throw error;
       if (!data) return res.status(404).json({ error: 'Reserva no encontrada' });
-      
+      if (!esManager && data.usuario_id !== req.user.id) {
+        return res.status(403).json({ error: 'No tiene permisos para ver esta reserva' });
+      }
+
       res.json(data);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
   },
 
-  // POST /api/reservas
+  // POST /api/reservas — cliente solo puede crear para sí; manager puede asignar usuario
   async create(req, res) {
     try {
-      const { 
-        usuario_id, 
-        creado_por_id, 
+      const {
+        usuario_id,
+        creado_por_id,
+        reserva_por_llamada,
+        nombre_cliente,
+        telefono_cliente,
         mesa_id,
-        fecha, 
-        hora, 
+        mesa_ids,
+        fecha,
+        hora,
         cantidad_personas,
         duracion_estimada_minutos,
         notas,
         monto_anticipo,
         metodo_pago_id
       } = req.body;
-      
-      // 1. Crear reserva (sin pago_anticipo_id)
+
+      const diasMax = parseInt(await reservasService.obtenerParametro('dias_anticipo_reserva_max'), 10) || 4;
+      const maxFecha = sumarDias(fechaHoy(), diasMax);
+      if (fecha > maxFecha) {
+        return res.status(400).json({ error: `La reserva no puede ser más de ${diasMax} días desde hoy` });
+      }
+
+      const duracion = parseInt(duracion_estimada_minutos, 10) || 120;
+      const validacion = await reservasService.validarReservaNoAntesDelCierre(fecha, hora, duracion);
+      if (!validacion.valido) {
+        return res.status(400).json({ error: validacion.error });
+      }
+
+      const ids = Array.isArray(mesa_ids) && mesa_ids.length > 0
+        ? mesa_ids
+        : (mesa_id ? [mesa_id] : []);
+      if (ids.length === 0) {
+        return res.status(400).json({ error: 'Se requiere al menos una mesa (mesa_id o mesa_ids)' });
+      }
+      const primeraMesaId = ids[0];
+
+      const esManager = req.user?.rol_id === ROLES.MANAGER;
+      const esPorLlamada = Boolean(reserva_por_llamada);
+      if (esPorLlamada && !esManager) {
+        return res.status(403).json({ error: 'Solo el administrador puede registrar reservas por llamada' });
+      }
+      if (esPorLlamada) {
+        const nombre = (nombre_cliente && String(nombre_cliente).trim()) || '';
+        const telefono = (telefono_cliente && String(telefono_cliente).trim()) || '';
+        if (!nombre || !telefono) {
+          return res.status(400).json({ error: 'En reserva por llamada son obligatorios el nombre y el teléfono del cliente' });
+        }
+      }
+
+      const uid = esPorLlamada ? null : (esManager && usuario_id ? usuario_id : req.user.id);
+      const cid = esPorLlamada ? req.user.id : (esManager && creado_por_id != null ? creado_por_id : req.user.id);
+
+      const payloadReserva = {
+        usuario_id: uid,
+        creado_por_id: cid,
+        mesa_id: primeraMesaId,
+        fecha,
+        hora,
+        cantidad_personas,
+        duracion_estimada_minutos,
+        estado_id: ESTADOS_RESERVA.PENDIENTE,
+        notas
+      };
+      if (esPorLlamada) {
+        payloadReserva.reserva_por_llamada = true;
+        payloadReserva.nombre_cliente = String(nombre_cliente).trim();
+        payloadReserva.telefono_cliente = String(telefono_cliente).trim();
+      }
+
       const { data: reserva, error: errReserva } = await supabase
         .from('reservas')
-        .insert({
-          usuario_id,
-          creado_por_id,
-          mesa_id,
-          fecha,
-          hora,
-          cantidad_personas,
-          duracion_estimada_minutos,
-          estado_id: 1, // pendiente
-          notas
-        })
+        .insert(payloadReserva)
         .select()
         .single();
-      
+
       if (errReserva) throw errReserva;
-      
-      // 2. Crear pago anticipo
+
+      try {
+        await supabase.from('reserva_mesas').insert(
+          ids.map(mid => ({ reserva_id: reserva.id, mesa_id: mid }))
+        );
+      } catch (_) {
+        // tabla reserva_mesas puede no existir; reserva ya tiene mesa_id
+      }
+
       const { data: pago, error: errPago } = await supabase
         .from('pagos')
         .insert({
@@ -103,19 +177,18 @@ const reservasController = {
         })
         .select()
         .single();
-      
+
       if (errPago) throw errPago;
-      
-      // 3. Actualizar reserva con pago_anticipo_id
+
       const { data: reservaActualizada, error: errUpdate } = await supabase
         .from('reservas')
-        .update({ pago_anticipo_id: pago.id, estado_id: 2 }) // confirmada
+        .update({ pago_anticipo_id: pago.id })
         .eq('id', reserva.id)
         .select()
         .single();
-      
+
       if (errUpdate) throw errUpdate;
-      
+
       res.status(201).json({ reserva: reservaActualizada, pago });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -126,15 +199,18 @@ const reservasController = {
   async update(req, res) {
     try {
       const { id } = req.params;
+      const fail = await assertPuedeModificarReserva(req, id);
+      if (fail.error) return res.status(fail.status).json({ error: fail.error });
+
       const { fecha, hora, cantidad_personas, mesa_id, notas } = req.body;
-      
+
       const { data, error } = await supabase
         .from('reservas')
         .update({ fecha, hora, cantidad_personas, mesa_id, notas })
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) throw error;
       res.json(data);
     } catch (error) {
@@ -146,14 +222,16 @@ const reservasController = {
   async cancelar(req, res) {
     try {
       const { id } = req.params;
-      
+      const fail = await assertPuedeModificarReserva(req, id);
+      if (fail.error) return res.status(fail.status).json({ error: fail.error });
+
       const { data, error } = await supabase
         .from('reservas')
         .update({ estado_id: 3 }) // cancelada
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) throw error;
       res.json({ message: 'Reserva cancelada', reserva: data });
     } catch (error) {
@@ -161,18 +239,38 @@ const reservasController = {
     }
   },
 
-  // PATCH /api/reservas/:id/confirmar
+  // PATCH /api/reservas/:id/confirmar — confirmar llegada: ocupa mesas y pasa a confirmada
   async confirmar(req, res) {
     try {
       const { id } = req.params;
-      
+      const fail = await assertPuedeModificarReserva(req, id);
+      if (fail.error) return res.status(fail.status).json({ error: fail.error });
+
+      const { data: reserva } = await supabase
+        .from('reservas')
+        .select('fecha, hora, duracion_estimada_minutos, mesa_id')
+        .eq('id', id)
+        .single();
+      if (!reserva) return res.status(404).json({ error: 'Reserva no encontrada' });
+
+      let mesaIds = [reserva.mesa_id];
+      try {
+        const { data: rm } = await supabase.from('reserva_mesas').select('mesa_id').eq('reserva_id', id);
+        if (rm && rm.length > 0) mesaIds = rm.map(r => r.mesa_id);
+      } catch (_) {}
+
+      const duracion = reserva.duracion_estimada_minutos || 120;
+      for (const mesaId of mesaIds) {
+        if (mesaId) await reservasService.crearAsignacionMesa(id, mesaId, reserva.fecha, reserva.hora, duracion);
+      }
+
       const { data, error } = await supabase
         .from('reservas')
-        .update({ estado_id: 2 }) // confirmada
+        .update({ estado_id: ESTADOS_RESERVA.CONFIRMADA })
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) throw error;
       res.json({ message: 'Reserva confirmada', reserva: data });
     } catch (error) {
@@ -180,18 +278,78 @@ const reservasController = {
     }
   },
 
-  // PATCH /api/reservas/:id/no-show
+  // PATCH /api/reservas/:id/iniciar-gracia — 15 min de gracia (manager)
+  async iniciarGracia(req, res) {
+    try {
+      const { id } = req.params;
+      const fail = await assertPuedeModificarReserva(req, id);
+      if (fail.error) return res.status(fail.status).json({ error: fail.error });
+
+      const hasta = new Date(Date.now() + 15 * 60 * 1000);
+      const { data, error } = await supabase
+        .from('reservas')
+        .update({ estado_id: ESTADOS_RESERVA.EN_GRACIA, gracia_hasta: hasta.toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      res.json({ message: 'Gracia de 15 min iniciada', reserva: data, gracia_hasta: hasta.toISOString() });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  // PATCH /api/reservas/:id/expirar-gracia — liberar mesas y marcar no-show (llamado al terminar el cronómetro)
+  async expirarGracia(req, res) {
+    try {
+      const { id } = req.params;
+      const fail = await assertPuedeModificarReserva(req, id);
+      if (fail.error) return res.status(fail.status).json({ error: fail.error });
+
+      const { data: r } = await supabase.from('reservas').select('estado_id, gracia_hasta').eq('id', id).single();
+      if (!r) return res.status(404).json({ error: 'Reserva no encontrada' });
+      if (r.estado_id !== ESTADOS_RESERVA.EN_GRACIA) {
+        return res.status(400).json({ error: 'La reserva no está en período de gracia' });
+      }
+
+      try {
+        await reservasService.liberarAsignacionMesa(id);
+      } catch (_) {}
+      try {
+        await supabase.from('reserva_mesas').delete().eq('reserva_id', id);
+      } catch (_) {}
+      await supabase.from('reservas').update({
+        mesa_id: null,
+        estado_id: ESTADOS_RESERVA.NO_SHOW,
+        gracia_hasta: null
+      }).eq('id', id);
+
+      const { data: reserva } = await supabase.from('reservas').select('*').eq('id', id).single();
+      res.json({ message: 'Gracia expirada; mesas liberadas', reserva });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  // PATCH /api/reservas/:id/no-show — típicamente manager; libera mesas si estaban ocupadas
   async marcarNoShow(req, res) {
     try {
       const { id } = req.params;
-      
+      const fail = await assertPuedeModificarReserva(req, id);
+      if (fail.error) return res.status(fail.status).json({ error: fail.error });
+
+      try {
+        await reservasService.liberarAsignacionMesa(id);
+      } catch (_) {}
+
       const { data, error } = await supabase
         .from('reservas')
         .update({ estado_id: 5 }) // no_show
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) throw error;
       res.json({ message: 'Reserva marcada como no-show', reserva: data });
     } catch (error) {
@@ -199,11 +357,20 @@ const reservasController = {
     }
   },
 
-  // PATCH /api/reservas/:id/completar
+  // PATCH /api/reservas/:id/completar — típicamente manager; libera mesas para que vuelvan a disponible
   async completar(req, res) {
     try {
       const { id } = req.params;
+      const fail = await assertPuedeModificarReserva(req, id);
+      if (fail.error) return res.status(fail.status).json({ error: fail.error });
       const { monto_cobrado, anticipo_aplicado, metodo_pago_id } = req.body;
+
+      // 0. Liberar asignaciones de mesa para que las mesas vuelvan a estado disponible
+      try {
+        await reservasService.liberarAsignacionMesa(id);
+      } catch (errLib) {
+        // Si no hay asignaciones o falla, continuar con el pago y cambio de estado
+      }
       
       // 1. Crear pago cuenta_final
       const { data: pago, error: errPago } = await supabase

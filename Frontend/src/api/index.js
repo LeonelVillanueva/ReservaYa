@@ -41,13 +41,21 @@ export const reservasApi = {
   create: (data) => api.post('/reservas', data),
   update: (id, data) => api.put(`/reservas/${id}`, data),
   cancelar: (id) => api.patch(`/reservas/${id}/cancelar`),
+  confirmar: (id) => api.patch(`/reservas/${id}/confirmar`),
+  iniciarGracia: (id) => api.patch(`/reservas/${id}/iniciar-gracia`),
+  expirarGracia: (id) => api.patch(`/reservas/${id}/expirar-gracia`),
   completar: (id, data) => api.patch(`/reservas/${id}/completar`, data),
 }
 
 export const mesasApi = {
   getAll: () => api.get('/mesas'),
+  getConEstado: (params) => api.get('/mesas/con-estado', { params }),
+  getOpcionesAsignacion: (params) => api.get('/mesas/opciones-asignacion', { params }),
   getDisponibles: (params) => api.get('/mesas/disponibles', { params }),
   getById: (id) => api.get(`/mesas/${id}`),
+  create: (data) => api.post('/mesas', data),
+  update: (id, data) => api.put(`/mesas/${id}`, data),
+  delete: (id) => api.delete(`/mesas/${id}`),
 }
 
 export const menuApi = {
@@ -63,6 +71,7 @@ export const parametrosApi = {
   getByClave: (clave) => api.get(`/parametros/${clave}`),
   update: (clave, valor) => api.put(`/parametros/${clave}`, { valor }),
   getHorarios: () => api.get('/parametros/horarios/restaurante'),
+  updateHorarios: (horarios) => api.put('/parametros/horarios/restaurante', { horarios }),
 }
 
 export const authApi = {

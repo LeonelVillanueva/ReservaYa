@@ -1,4 +1,5 @@
 const { supabase } = require('../config/supabase');
+const reservasService = require('../services/reservas.service');
 
 const mesasController = {
   // GET /api/mesas
@@ -11,6 +12,69 @@ const mesasController = {
       
       if (error) throw error;
       res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  // GET /api/mesas/con-estado — mesas con estado (disponible, ocupado, reservado) para una fecha
+  async getConEstado(req, res) {
+    try {
+      const fecha = req.query.fecha || new Date().toISOString().slice(0, 10);
+
+      const [mesasRes, asignacionesRes, reservasRes] = await Promise.all([
+        supabase.from('mesas').select('*').order('numero_mesa'),
+        supabase.from('asignaciones_mesa').select('mesa_id').eq('fecha', fecha).eq('estado', 'ocupada'),
+        supabase.from('reservas').select('id, mesa_id, estado_id').eq('fecha', fecha).in('estado_id', [1, 2, 6]),
+      ]);
+
+      const { data: mesas, error: errMesas } = mesasRes;
+      if (errMesas) throw errMesas;
+
+      const asignaciones = asignacionesRes.data || [];
+      const reservas = reservasRes.data || [];
+      const mesasOcupadas = new Set(asignaciones.map(a => a.mesa_id));
+      const mesasReservadas = new Set(
+        reservas.filter(r => r.mesa_id && !mesasOcupadas.has(r.mesa_id)).map(r => r.mesa_id)
+      );
+      try {
+        const reservaIds = reservas.map(r => r.id);
+        if (reservaIds.length > 0) {
+          const { data: rm } = await supabase.from('reserva_mesas').select('mesa_id').in('reserva_id', reservaIds);
+          (rm || []).forEach(row => mesasReservadas.add(row.mesa_id));
+        }
+      } catch (_) {}
+
+      const result = (mesas || [])
+        .filter(m => m?.activa !== false)
+        .map(m => {
+          let estado = 'disponible';
+          if (mesasOcupadas.has(m.id)) estado = 'ocupado';
+          else if (mesasReservadas.has(m.id)) estado = 'reservado';
+          return { ...m, estado };
+        });
+
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  // GET /api/mesas/opciones-asignacion - Opciones: 1 mesa o combinación para N personas
+  async getOpcionesAsignacion(req, res) {
+    try {
+      const { fecha, hora, cantidad_personas, duracion = 120 } = req.query;
+      if (!fecha || !hora) {
+        return res.status(400).json({ error: 'Se requiere fecha y hora' });
+      }
+      const horaNorm = hora.length === 5 ? `${hora}:00` : hora;
+      const resultado = await reservasService.getOpcionesAsignacion(
+        fecha,
+        horaNorm,
+        cantidad_personas || 1,
+        parseInt(duracion, 10) || 120
+      );
+      res.json(resultado);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -91,11 +155,11 @@ const mesasController = {
   // POST /api/mesas
   async create(req, res) {
     try {
-      const { numero_mesa, capacidad, posicion_x, posicion_y, activa = true } = req.body;
+      const { numero_mesa, capacidad, posicion_x, posicion_y, activa = true, combinable = false } = req.body;
       
       const { data, error } = await supabase
         .from('mesas')
-        .insert({ numero_mesa, capacidad, posicion_x, posicion_y, activa })
+        .insert({ numero_mesa, capacidad, posicion_x, posicion_y, activa, combinable })
         .select()
         .single();
       
@@ -110,11 +174,11 @@ const mesasController = {
   async update(req, res) {
     try {
       const { id } = req.params;
-      const { numero_mesa, capacidad, posicion_x, posicion_y, activa } = req.body;
+      const { numero_mesa, capacidad, posicion_x, posicion_y, activa, combinable } = req.body;
       
       const { data, error } = await supabase
         .from('mesas')
-        .update({ numero_mesa, capacidad, posicion_x, posicion_y, activa })
+        .update({ numero_mesa, capacidad, posicion_x, posicion_y, activa, combinable })
         .eq('id', id)
         .select()
         .single();
