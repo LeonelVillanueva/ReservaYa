@@ -3,17 +3,8 @@
     <header v-if="!hideHeader" class="topbar">
       <div class="topbar-inner">
         <router-link :to="authStore.isAuthenticated ? '/inicio' : '/'" class="topbar-logo">
-          <img src="/logos/Logo_letras.webp" alt="ReservaYa" class="h-8 object-contain" />
+          <img :src="appImagesStore.logoLetrasUrl" alt="ReservaYa" class="h-8 object-contain" />
         </router-link>
-
-        <nav v-if="authStore.isAuthenticated" class="topbar-nav">
-          <router-link to="/inicio" class="topbar-link" :class="{ 'topbar-link-active': $route.path === '/inicio' }">
-            Inicio
-          </router-link>
-          <router-link to="/reservas/nueva" class="topbar-link" :class="{ 'topbar-link-active': $route.path === '/reservas/nueva' }">
-            Nueva reserva
-          </router-link>
-        </nav>
 
         <div class="topbar-actions">
           <template v-if="authStore.isAuthenticated">
@@ -48,7 +39,7 @@
 
     <footer v-if="!hideFooter" class="border-t border-gray-200 bg-white py-6 mt-auto">
       <div class="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm">
-        <img src="/logos/Logo_letras.webp" alt="ReservaYa" class="h-5 object-contain inline-block opacity-70" />
+        <img :src="appImagesStore.logoLetrasUrl" alt="ReservaYa" class="h-5 object-contain inline-block opacity-70" />
         <span class="ml-1">© {{ new Date().getFullYear() }}</span>
       </div>
     </footer>
@@ -58,6 +49,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useAppImagesStore } from '@/stores/appImages'
 
 const props = defineProps({
   hideHeader: { type: Boolean, default: false },
@@ -66,6 +58,7 @@ const props = defineProps({
 
 const router = useRouter()
 const authStore = useAuthStore()
+const appImagesStore = useAppImagesStore()
 
 function cerrarSesion() {
   authStore.logout()
@@ -82,15 +75,6 @@ function cerrarSesion() {
 }
 .topbar-logo {
   @apply flex items-center shrink-0;
-}
-.topbar-nav {
-  @apply hidden sm:flex items-center gap-1;
-}
-.topbar-link {
-  @apply px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-primary-50 transition-colors;
-}
-.topbar-link-active {
-  @apply text-primary-600 bg-primary-50;
 }
 .topbar-actions {
   @apply flex items-center gap-2 sm:gap-3;

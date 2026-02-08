@@ -80,7 +80,7 @@
           <span class="text-center text-sm font-semibold text-gray-900 py-1">Mesa {{ m.numero_mesa }}</span>
           <div class="relative flex-1 aspect-square">
             <img
-              src="/logos/mesa.webp"
+              :src="appImagesStore.mesaUrl"
               :alt="'Mesa ' + m.numero_mesa"
               class="w-full h-full object-contain"
             />
@@ -127,6 +127,7 @@
 import { ref, onMounted } from 'vue'
 import { mesasApi } from '@/api'
 import { invalidateMesasCache } from '@/composables/useMesasConEstado'
+import { useAppImagesStore } from '@/stores/appImages'
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -138,6 +139,8 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog'
+
+const appImagesStore = useAppImagesStore()
 
 const mesas = ref([])
 const loading = ref(true)

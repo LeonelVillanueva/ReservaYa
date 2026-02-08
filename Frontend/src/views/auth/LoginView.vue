@@ -6,7 +6,7 @@
       style="background: linear-gradient(to bottom, rgba(255,255,255,0.4), rgba(255,255,255,0.6));"
     >
       <img
-        src="/logos/IMGReservaYa.webp"
+        :src="appImagesStore.logoUrl"
         alt=""
         class="absolute inset-0 w-full h-full object-contain object-center opacity-20 scale-130 pointer-events-none select-none"
         aria-hidden="true"
@@ -35,7 +35,31 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-            <input v-model="password" type="password" class="input bg-white/80" placeholder="•••••••••••" required />
+            <div class="relative">
+              <input
+                v-model="password"
+                :type="showPassword ? 'text' : 'password'"
+                class="input bg-white/80 pr-10"
+                placeholder="•••••••••••"
+                required
+              />
+              <button
+                type="button"
+                class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 transition-colors"
+                @click="showPassword = !showPassword"
+                :title="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              >
+                <!-- Ojo abierto (mostrar) -->
+                <svg v-if="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <!-- Ojo cerrado (ocultar) -->
+                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                </svg>
+              </button>
+            </div>
           </div>
           <button type="submit" class="btn-primary w-full" :disabled="loading">
             {{ loading ? 'Entrando...' : 'Entrar' }}
@@ -64,12 +88,15 @@ import { useRouter } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
 import Alert from '@/components/ui/Alert.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useAppImagesStore } from '@/stores/appImages'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const appImagesStore = useAppImagesStore()
 
 const username = ref('')
 const password = ref('')
+const showPassword = ref(false)
 const error = ref('')
 const loading = ref(false)
 let errorTimeoutId = null

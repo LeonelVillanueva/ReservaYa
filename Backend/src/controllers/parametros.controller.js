@@ -42,10 +42,10 @@ const parametrosController = {
       const { clave } = req.params;
       const { valor } = req.body;
       
+      // Upsert: crea el parámetro si no existe, lo actualiza si ya existe
       const { data, error } = await supabase
         .from('parametros')
-        .update({ valor })
-        .eq('clave', clave)
+        .upsert({ clave, valor }, { onConflict: 'clave' })
         .select()
         .single();
       

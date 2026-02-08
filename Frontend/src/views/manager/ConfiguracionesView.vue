@@ -160,13 +160,200 @@
     >
       <span class="config-resizer-handle-h" />
     </div>
+
+    <!-- Sección de imágenes -->
+    <div class="mt-1 flex-1 min-h-0 overflow-auto">
+      <div class="card p-4">
+        <h2 class="text-base font-semibold text-gray-900 mb-3">Imágenes del sistema</h2>
+        <p class="text-xs text-gray-500 mb-4">Sube imágenes personalizadas para reemplazar las predeterminadas. Si no subes ninguna, se usarán las imágenes locales.</p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- Logo principal -->
+          <div class="border border-gray-200 rounded-xl p-3 flex flex-col items-center gap-3">
+            <span class="text-xs font-medium text-gray-700">Logo principal</span>
+            <div class="w-24 h-24 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden">
+              <img
+                :src="imgLogoPreview || appImagesStore.logoUrl"
+                alt="Logo principal"
+                class="max-w-full max-h-full object-contain"
+              />
+            </div>
+            <div class="flex flex-col items-center gap-1.5 w-full">
+              <label class="btn-primary text-xs cursor-pointer text-center w-full" :class="{ 'opacity-50 pointer-events-none': uploadingLogo }">
+                {{ uploadingLogo ? 'Subiendo...' : 'Cambiar imagen' }}
+                <input type="file" accept="image/*" class="hidden" @change="onUploadLogo" :disabled="uploadingLogo" />
+              </label>
+              <button
+                v-if="appImagesStore.imagenes.imagen_logo_principal"
+                type="button"
+                class="text-xs text-red-500 hover:text-red-700 underline"
+                @click="resetImagen('imagen_logo_principal', 'logo')"
+              >
+                Restaurar default
+              </button>
+            </div>
+            <Transition name="img-alert">
+              <Alert v-if="errorLogo" class="mt-1 w-full" variant="destructive" title="Error">{{ errorLogo }}</Alert>
+            </Transition>
+          </div>
+
+          <!-- Logo letras -->
+          <div class="border border-gray-200 rounded-xl p-3 flex flex-col items-center gap-3">
+            <span class="text-xs font-medium text-gray-700">Logo con letras</span>
+            <div class="w-24 h-24 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden">
+              <img
+                :src="imgLetrasPreview || appImagesStore.logoLetrasUrl"
+                alt="Logo letras"
+                class="max-w-full max-h-full object-contain"
+              />
+            </div>
+            <div class="flex flex-col items-center gap-1.5 w-full">
+              <label class="btn-primary text-xs cursor-pointer text-center w-full" :class="{ 'opacity-50 pointer-events-none': uploadingLetras }">
+                {{ uploadingLetras ? 'Subiendo...' : 'Cambiar imagen' }}
+                <input type="file" accept="image/*" class="hidden" @change="onUploadLetras" :disabled="uploadingLetras" />
+              </label>
+              <button
+                v-if="appImagesStore.imagenes.imagen_logo_letras"
+                type="button"
+                class="text-xs text-red-500 hover:text-red-700 underline"
+                @click="resetImagen('imagen_logo_letras', 'letras')"
+              >
+                Restaurar default
+              </button>
+            </div>
+            <Transition name="img-alert">
+              <Alert v-if="errorLetras" class="mt-1 w-full" variant="destructive" title="Error">{{ errorLetras }}</Alert>
+            </Transition>
+          </div>
+
+          <!-- Imagen mesa -->
+          <div class="border border-gray-200 rounded-xl p-3 flex flex-col items-center gap-3">
+            <span class="text-xs font-medium text-gray-700">Imagen de mesa</span>
+            <div class="w-24 h-24 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden">
+              <img
+                :src="imgMesaPreview || appImagesStore.mesaUrl"
+                alt="Imagen mesa"
+                class="max-w-full max-h-full object-contain"
+              />
+            </div>
+            <div class="flex flex-col items-center gap-1.5 w-full">
+              <label class="btn-primary text-xs cursor-pointer text-center w-full" :class="{ 'opacity-50 pointer-events-none': uploadingMesa }">
+                {{ uploadingMesa ? 'Subiendo...' : 'Cambiar imagen' }}
+                <input type="file" accept="image/*" class="hidden" @change="onUploadMesa" :disabled="uploadingMesa" />
+              </label>
+              <button
+                v-if="appImagesStore.imagenes.imagen_mesa"
+                type="button"
+                class="text-xs text-red-500 hover:text-red-700 underline"
+                @click="resetImagen('imagen_mesa', 'mesa')"
+              >
+                Restaurar default
+              </button>
+            </div>
+            <Transition name="img-alert">
+              <Alert v-if="errorMesa" class="mt-1 w-full" variant="destructive" title="Error">{{ errorMesa }}</Alert>
+            </Transition>
+          </div>
+        </div>
+
+        <Transition name="img-alert">
+          <Alert v-if="successImagen" class="mt-3" variant="success" title="Listo">{{ successImagen }}</Alert>
+        </Transition>
+      </div>
+
+      <!-- Sección del carrusel -->
+      <div class="card p-4 mt-4">
+        <h2 class="text-base font-semibold text-gray-900 mb-1">Carrusel de imágenes</h2>
+        <p class="text-xs text-gray-500 mb-4">Administra las imágenes que se mostrarán en el carrusel de la página de inicio. Puedes agregar, eliminar y configurar el intervalo entre imágenes.</p>
+
+        <!-- Configuración del intervalo -->
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+          <label class="text-xs font-medium text-gray-700">Intervalo entre imágenes:</label>
+          <div class="flex items-center gap-2">
+            <input
+              v-model.number="carruselIntervaloLocal"
+              type="number"
+              min="1"
+              max="30"
+              step="1"
+              class="input bg-white w-20 text-sm py-1.5 text-center"
+            />
+            <span class="text-xs text-gray-500">segundos</span>
+          </div>
+          <button
+            type="button"
+            class="btn-primary text-xs"
+            :disabled="savingIntervalo || carruselIntervaloLocal === appImagesStore.carruselIntervalo"
+            @click="guardarIntervalo"
+          >
+            {{ savingIntervalo ? 'Guardando...' : 'Aplicar' }}
+          </button>
+        </div>
+
+        <!-- Agregar imágenes -->
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+          <label
+            class="btn-primary text-xs cursor-pointer"
+            :class="{ 'opacity-50 pointer-events-none': uploadingCarrusel || carruselLleno }"
+          >
+            {{ uploadingCarrusel ? `Subiendo (${carruselUploadProgress})...` : 'Agregar imágenes' }}
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              class="hidden"
+              @change="onUploadCarrusel"
+              :disabled="uploadingCarrusel || carruselLleno"
+            />
+          </label>
+          <span class="text-xs" :class="carruselLleno ? 'text-amber-600 font-medium' : 'text-gray-500'">
+            {{ appImagesStore.carruselImagenes.length }} de {{ appImagesStore.maxCarrusel }}
+            <template v-if="!carruselLleno"> &mdash; {{ espaciosCarrusel }} espacio(s) disponible(s)</template>
+            <template v-else> &mdash; Carrusel lleno</template>
+          </span>
+        </div>
+
+        <Transition name="img-alert">
+          <Alert v-if="errorCarrusel" class="mb-3" variant="destructive" title="Error">{{ errorCarrusel }}</Alert>
+        </Transition>
+        <Transition name="img-alert">
+          <Alert v-if="successCarrusel" class="mb-3" variant="success" title="Listo">{{ successCarrusel }}</Alert>
+        </Transition>
+
+        <!-- Lista de imágenes del carrusel -->
+        <div v-if="appImagesStore.carruselImagenes.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div
+            v-for="(url, idx) in appImagesStore.carruselImagenes"
+            :key="idx"
+            class="relative group border border-gray-200 rounded-lg overflow-hidden"
+          >
+            <img :src="url" alt="Imagen carrusel" class="w-full h-24 object-cover" />
+            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <button
+                type="button"
+                class="bg-red-500 hover:bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center shadow text-xs"
+                title="Eliminar imagen"
+                @click="eliminarImagenCarrusel(idx)"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+            <span class="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">{{ idx + 1 }}</span>
+          </div>
+        </div>
+        <p v-else class="text-xs text-gray-400 italic">No hay imágenes en el carrusel. Agrega algunas para que se muestren en la página de inicio.</p>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import Alert from '@/components/ui/Alert.vue'
-import { parametrosApi } from '@/api'
+import { parametrosApi, storageApi } from '@/api'
+import { useAppImagesStore } from '@/stores/appImages'
 
 const MIN_PANEL_PCT = 25
 const MAX_PANEL_PCT = 75
@@ -307,10 +494,12 @@ async function cargarParametros() {
   errorParams.value = ''
   try {
     const data = await parametrosApi.getAll()
-    parametros.value = (data || []).map((p) => ({
-      ...p,
-      valorEdit: p.valor != null ? String(p.valor) : '',
-    }))
+    parametros.value = (data || [])
+      .filter((p) => !p.clave.startsWith('imagen_') && !p.clave.startsWith('carrusel_'))
+      .map((p) => ({
+        ...p,
+        valorEdit: p.valor != null ? String(p.valor) : '',
+      }))
   } catch (err) {
     errorParams.value = err?.error || err?.message || 'Error al cargar parámetros'
   } finally {
@@ -381,9 +570,223 @@ async function guardarHorarios() {
   }
 }
 
+// === Gestión de imágenes ===
+const appImagesStore = useAppImagesStore()
+
+const TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const MAX_SIZE = 5 * 1024 * 1024 // 5 MB
+
+const uploadingLogo = ref(false)
+const uploadingLetras = ref(false)
+const uploadingMesa = ref(false)
+const errorLogo = ref('')
+const errorLetras = ref('')
+const errorMesa = ref('')
+const imgLogoPreview = ref(null)
+const imgLetrasPreview = ref(null)
+const imgMesaPreview = ref(null)
+const successImagen = ref('')
+
+function clearSuccessImagen() {
+  setTimeout(() => { successImagen.value = '' }, 3000)
+}
+
+function validarArchivo(file) {
+  if (!file) return 'No se seleccionó ningún archivo'
+  if (!TIPOS_PERMITIDOS.includes(file.type)) return 'Tipo no permitido. Use JPG, PNG, WebP o GIF.'
+  if (file.size > MAX_SIZE) return 'El archivo excede los 5 MB permitidos.'
+  return null
+}
+
+async function subirImagen(folder, file) {
+  const response = await storageApi.upload(folder, file)
+  // response ya es response.data gracias al interceptor de axios
+  return response?.data?.url || response?.url || null
+}
+
+async function onUploadLogo(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+  errorLogo.value = ''
+  const errorValidacion = validarArchivo(file)
+  if (errorValidacion) { errorLogo.value = errorValidacion; event.target.value = ''; return }
+  uploadingLogo.value = true
+  imgLogoPreview.value = URL.createObjectURL(file)
+  try {
+    const oldUrl = appImagesStore.imagenes.imagen_logo_principal
+    const url = await subirImagen('restaurante', file)
+    if (!url) throw new Error('No se recibió URL del servidor')
+    await appImagesStore.guardar('imagen_logo_principal', url)
+    // Eliminar la imagen anterior del bucket
+    if (oldUrl) await storageApi.deleteByUrl(oldUrl)
+    successImagen.value = 'Logo principal actualizado.'
+    clearSuccessImagen()
+  } catch (err) {
+    errorLogo.value = err?.error || err?.message || 'Error al subir la imagen'
+  } finally {
+    uploadingLogo.value = false
+    imgLogoPreview.value = null
+    event.target.value = ''
+  }
+}
+
+async function onUploadLetras(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+  errorLetras.value = ''
+  const errorValidacion = validarArchivo(file)
+  if (errorValidacion) { errorLetras.value = errorValidacion; event.target.value = ''; return }
+  uploadingLetras.value = true
+  imgLetrasPreview.value = URL.createObjectURL(file)
+  try {
+    const oldUrl = appImagesStore.imagenes.imagen_logo_letras
+    const url = await subirImagen('restaurante', file)
+    if (!url) throw new Error('No se recibió URL del servidor')
+    await appImagesStore.guardar('imagen_logo_letras', url)
+    if (oldUrl) await storageApi.deleteByUrl(oldUrl)
+    successImagen.value = 'Logo con letras actualizado.'
+    clearSuccessImagen()
+  } catch (err) {
+    errorLetras.value = err?.error || err?.message || 'Error al subir la imagen'
+  } finally {
+    uploadingLetras.value = false
+    imgLetrasPreview.value = null
+    event.target.value = ''
+  }
+}
+
+async function onUploadMesa(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+  errorMesa.value = ''
+  const errorValidacion = validarArchivo(file)
+  if (errorValidacion) { errorMesa.value = errorValidacion; event.target.value = ''; return }
+  uploadingMesa.value = true
+  imgMesaPreview.value = URL.createObjectURL(file)
+  try {
+    const oldUrl = appImagesStore.imagenes.imagen_mesa
+    const url = await subirImagen('restaurante', file)
+    if (!url) throw new Error('No se recibió URL del servidor')
+    await appImagesStore.guardar('imagen_mesa', url)
+    if (oldUrl) await storageApi.deleteByUrl(oldUrl)
+    successImagen.value = 'Imagen de mesa actualizada.'
+    clearSuccessImagen()
+  } catch (err) {
+    errorMesa.value = err?.error || err?.message || 'Error al subir la imagen'
+  } finally {
+    uploadingMesa.value = false
+    imgMesaPreview.value = null
+    event.target.value = ''
+  }
+}
+
+async function resetImagen(clave, tipo) {
+  try {
+    const oldUrl = appImagesStore.imagenes[clave]
+    await appImagesStore.guardar(clave, null)
+    // Eliminar la imagen del bucket al restaurar default
+    if (oldUrl) await storageApi.deleteByUrl(oldUrl)
+    successImagen.value = `Imagen de ${tipo} restaurada al default.`
+    clearSuccessImagen()
+  } catch (err) {
+    console.error('Error al restaurar imagen:', err)
+  }
+}
+
+// === Gestión del carrusel ===
+const carruselIntervaloLocal = ref(appImagesStore.carruselIntervalo)
+const uploadingCarrusel = ref(false)
+const savingIntervalo = ref(false)
+const errorCarrusel = ref('')
+const successCarrusel = ref('')
+const carruselUploadProgress = ref('')
+
+const carruselLleno = computed(() => appImagesStore.carruselImagenes.length >= appImagesStore.maxCarrusel)
+const espaciosCarrusel = computed(() => appImagesStore.maxCarrusel - appImagesStore.carruselImagenes.length)
+
+function clearSuccessCarrusel() {
+  setTimeout(() => { successCarrusel.value = '' }, 3000)
+}
+
+async function guardarIntervalo() {
+  savingIntervalo.value = true
+  errorCarrusel.value = ''
+  try {
+    await appImagesStore.setIntervaloCarrusel(carruselIntervaloLocal.value)
+    successCarrusel.value = 'Intervalo actualizado.'
+    clearSuccessCarrusel()
+  } catch (err) {
+    errorCarrusel.value = err?.error || err?.message || 'Error al guardar intervalo'
+  } finally {
+    savingIntervalo.value = false
+  }
+}
+
+async function onUploadCarrusel(event) {
+  const files = Array.from(event.target.files || [])
+  if (files.length === 0) return
+  errorCarrusel.value = ''
+
+  // Validar cantidad disponible
+  const disponibles = espaciosCarrusel.value
+  if (files.length > disponibles) {
+    errorCarrusel.value = `Solo puedes agregar ${disponibles} imagen(es) más (máximo ${appImagesStore.maxCarrusel}).`
+    event.target.value = ''
+    return
+  }
+
+  // Validar cada archivo
+  for (const file of files) {
+    const errorValidacion = validarArchivo(file)
+    if (errorValidacion) {
+      errorCarrusel.value = `${file.name}: ${errorValidacion}`
+      event.target.value = ''
+      return
+    }
+  }
+
+  uploadingCarrusel.value = true
+  const urls = []
+  try {
+    for (let i = 0; i < files.length; i++) {
+      carruselUploadProgress.value = `${i + 1}/${files.length}`
+      const url = await subirImagen('restaurante', files[i])
+      if (!url) throw new Error(`No se recibió URL para ${files[i].name}`)
+      urls.push(url)
+    }
+    await appImagesStore.agregarImagenesCarrusel(urls)
+    successCarrusel.value = urls.length === 1
+      ? 'Imagen agregada al carrusel.'
+      : `${urls.length} imágenes agregadas al carrusel.`
+    clearSuccessCarrusel()
+  } catch (err) {
+    errorCarrusel.value = err?.error || err?.message || 'Error al subir las imágenes'
+  } finally {
+    uploadingCarrusel.value = false
+    carruselUploadProgress.value = ''
+    event.target.value = ''
+  }
+}
+
+async function eliminarImagenCarrusel(index) {
+  errorCarrusel.value = ''
+  try {
+    const url = appImagesStore.carruselImagenes[index]
+    await appImagesStore.eliminarImagenCarrusel(index)
+    // Eliminar la imagen del bucket
+    if (url) await storageApi.deleteByUrl(url)
+    successCarrusel.value = 'Imagen eliminada del carrusel.'
+    clearSuccessCarrusel()
+  } catch (err) {
+    errorCarrusel.value = err?.error || err?.message || 'Error al eliminar la imagen'
+  }
+}
+
 onMounted(() => {
   cargarParametros()
   cargarHorarios()
+  // Sincronizar el valor local del intervalo con el store
+  carruselIntervaloLocal.value = appImagesStore.carruselIntervalo
 })
 </script>
 
@@ -472,5 +875,14 @@ onMounted(() => {
 .config-resizer-active .config-resizer-handle {
   background: rgb(237 117 26);
   opacity: 1;
+}
+.img-alert-enter-active,
+.img-alert-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.img-alert-enter-from,
+.img-alert-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 </style>

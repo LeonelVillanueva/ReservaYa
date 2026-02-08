@@ -69,7 +69,7 @@
             </span>
             <div class="relative flex-1 aspect-square">
               <img
-                src="/logos/mesa.webp"
+                :src="appImagesStore.mesaUrl"
                 :alt="'Mesa ' + m.numero_mesa + ', estado: ' + (m.estado || 'disponible')"
                 class="w-full h-full object-contain"
               />
@@ -122,7 +122,9 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useMesasConEstado } from '@/composables/useMesasConEstado'
+import { useAppImagesStore } from '@/stores/appImages'
 
+const appImagesStore = useAppImagesStore()
 const { mesasConEstado, loadingMesas, cargarMesas } = useMesasConEstado()
 const vista = ref('grid') // 'grid' | 'lista'
 

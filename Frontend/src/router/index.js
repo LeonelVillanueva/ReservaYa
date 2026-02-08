@@ -62,12 +62,24 @@ const router = createRouter({
           name: 'admin-panorama-mesas',
           component: () => import('@/views/manager/PanoramaMesasView.vue'),
           meta: { title: 'Panorama de mesas', requiresAuth: true, requiresManager: true }
+        },
+        {
+          path: 'menu',
+          name: 'admin-menu',
+          component: () => import('@/views/manager/MenuView.vue'),
+          meta: { title: 'Menú', requiresAuth: true, requiresManager: true }
         }
       ]
     },
     {
       path: '/configuraciones',
       redirect: '/admin/configuraciones'
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('@/views/NotFoundView.vue'),
+      meta: { title: 'Página no encontrada' }
     }
   ]
 })
@@ -112,6 +124,22 @@ router.beforeEach(async (to, from, next) => {
     return
   }
   next()
+})
+
+// Si un componente lazy falla al cargar (chunk roto, red caída, deploy nuevo, etc.)
+// redirigir a la página de error en lugar de mostrar pantalla en blanco
+router.onError((error, to) => {
+  if (
+    error.message.includes('Failed to fetch dynamically imported module') ||
+    error.message.includes('Importing a module script failed') ||
+    error.message.includes('error loading dynamically imported module') ||
+    error.message.includes('Unable to preload CSS')
+  ) {
+    router.push({
+      name: 'not-found',
+      query: { error: 'load', intended: to.fullPath }
+    })
+  }
 })
 
 export default router

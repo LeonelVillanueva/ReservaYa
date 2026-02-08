@@ -11,6 +11,7 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useAppImagesStore } from '@/stores/appImages'
 
 // Restaurar usuario al cargar si hay token (p. ej. tras recargar la página)
 onMounted(() => {
@@ -18,6 +19,10 @@ onMounted(() => {
   if (authStore.token) {
     authStore.fetchUser()
   }
+
+  // Cargar URLs de imágenes desde parámetros
+  const appImagesStore = useAppImagesStore()
+  appImagesStore.cargar()
 })
 </script>
 

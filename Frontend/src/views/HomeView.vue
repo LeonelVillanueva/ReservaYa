@@ -1,11 +1,36 @@
 <template>
   <MainLayout>
     <div class="max-w-6xl mx-auto px-4 py-8">
-      <div class="card p-6 mb-6">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">Bienvenido, {{ authStore.userNombre }}</h1>
-          <p class="text-gray-600 mt-1">Gestiona tus reservas desde aquí.</p>
+      <!-- Banner principal -->
+      <div class="mb-6 rounded-xl bg-gradient-to-r from-primary-600 to-primary-700 p-6 text-white shadow-lg">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 class="text-xl font-bold">¿Listo para una experiencia única?</h1>
+            <p class="text-primary-100 text-sm mt-1">Explora nuestro menú y reserva tu mesa en segundos.</p>
+          </div>
+          <router-link
+            to="/reservas/nueva"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-primary-700 font-semibold text-sm hover:bg-primary-50 shadow transition-colors"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Reservar mesa
+          </router-link>
         </div>
+      </div>
+
+      <!-- Carrusel de imágenes -->
+      <div v-if="appImagesStore.carruselImagenes.length > 0" class="mb-6">
+        <HomeCarousel
+          :imagenes="appImagesStore.carruselImagenes"
+          :intervalo="appImagesStore.carruselIntervalo"
+        />
+      </div>
+
+      <!-- Menú del restaurante -->
+      <div class="card p-6 mb-6">
+        <MenuDisplay />
       </div>
 
       <!-- Layout dos columnas: mesas a la izquierda, reservas a la derecha -->
@@ -68,7 +93,7 @@
               <span class="text-center text-sm font-semibold text-gray-900 py-1">Mesa {{ m.numero_mesa }}</span>
               <div class="relative flex-1 aspect-square">
                 <img
-                  src="/logos/mesa.webp"
+                  :src="appImagesStore.mesaUrl"
                   :alt="'Mesa ' + m.numero_mesa + ', estado: ' + (m.estado || 'disponible')"
                   class="w-full h-full object-contain"
                 />
@@ -371,10 +396,13 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
+import MenuDisplay from '@/components/menu/MenuDisplay.vue'
+import HomeCarousel from '@/components/carousel/HomeCarousel.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useReservasStore } from '@/stores/reservas'
 import { useMesasConEstado, invalidateMesasCache } from '@/composables/useMesasConEstado'
 import { reservasApi } from '@/api'
+import { useAppImagesStore } from '@/stores/appImages'
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -390,6 +418,7 @@ import {
 const router = useRouter()
 const authStore = useAuthStore()
 const reservasStore = useReservasStore()
+const appImagesStore = useAppImagesStore()
 
 const { mesasConEstado, loadingMesas, cargarMesas } = useMesasConEstado()
 const errorAccion = ref('')

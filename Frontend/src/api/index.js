@@ -59,9 +59,20 @@ export const mesasApi = {
 }
 
 export const menuApi = {
+  // Categorías
   getCategorias: () => api.get('/menu/categorias'),
+  createCategoria: (data) => api.post('/menu/categorias', data),
+  updateCategoria: (id, data) => api.put(`/menu/categorias/${id}`, data),
+  // Platos
   getPlatos: (params) => api.get('/menu/platos', { params }),
   getPlatoById: (id) => api.get(`/menu/platos/${id}`),
+  createPlato: (data) => api.post('/menu/platos', data),
+  updatePlato: (id, data) => api.put(`/menu/platos/${id}`, data),
+  toggleDisponibilidad: (id, disponible) => api.patch(`/menu/platos/${id}/disponibilidad`, { disponible }),
+  // Ingredientes
+  getIngredientes: () => api.get('/menu/ingredientes'),
+  createIngrediente: (data) => api.post('/menu/ingredientes', data),
+  // Alergias
   getAlergias: () => api.get('/menu/alergias'),
   getPlatosSeguros: (usuarioId) => api.get(`/menu/platos-seguros/${usuarioId}`),
 }
@@ -81,6 +92,31 @@ export const authApi = {
   me: () => api.get('/auth/me'),
   verificarEmail: (codigo) => api.post('/auth/verificar-email', { codigo }),
   reenviarCodigo: () => api.post('/auth/reenviar-codigo'),
+}
+
+export const storageApi = {
+  upload: (folder, file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post(`/storage/upload/${folder}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 30000,
+    })
+  },
+  delete: (folder, filename) => api.delete(`/storage/${folder}/${filename}`),
+  /**
+   * Elimina una imagen del bucket dado su URL pública de Supabase.
+   * Extrae folder/filename de la URL. Si falla o la URL no es de storage, no lanza error.
+   */
+  deleteByUrl: (url) => {
+    if (!url) return Promise.resolve()
+    // URL pattern: .../object/public/BUCKET_NAME/folder/filename
+    const match = url.match(/\/object\/public\/[^/]+\/(.+?)\/(.+)$/)
+    if (!match) return Promise.resolve()
+    return api.delete(`/storage/${match[1]}/${match[2]}`).catch((err) => {
+      console.warn('[storageApi] No se pudo eliminar del bucket:', err)
+    })
+  },
 }
 
 export const usuariosApi = {

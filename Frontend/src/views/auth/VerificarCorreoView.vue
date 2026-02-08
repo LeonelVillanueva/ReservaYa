@@ -5,7 +5,7 @@
       style="background: linear-gradient(to bottom, rgba(255,255,255,0.4), rgba(255,255,255,0.6));"
     >
       <img
-        src="/logos/IMGReservaYa.webp"
+        :src="appImagesStore.logoUrl"
         alt=""
         class="absolute inset-0 w-full h-full object-contain object-center opacity-20 scale-130 pointer-events-none select-none"
         aria-hidden="true"
@@ -80,9 +80,11 @@ import { useRouter } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
 import Alert from '@/components/ui/Alert.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useAppImagesStore } from '@/stores/appImages'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const appImagesStore = useAppImagesStore()
 
 const codigo = ref('')
 const error = ref('')
