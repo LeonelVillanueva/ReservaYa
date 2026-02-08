@@ -1,6 +1,7 @@
 const { supabase } = require('../config/supabase');
 const { ROLES } = require('../utils/constants');
 const { resolveUserIdFromHeader } = require('../utils/token.utils');
+const { unauthorized, forbidden } = require('../utils/responses');
 
 /**
  * Middleware de autenticación unificado:
@@ -13,10 +14,7 @@ const verificarAuth = async (req, res, next) => {
     const userId = resolveUserIdFromHeader(req.headers.authorization);
 
     if (!userId) {
-      return res.status(401).json({
-        success: false,
-        error: 'Token no proporcionado o inválido',
-      });
+      return unauthorized(res, 'Token no proporcionado o inválido');
     }
 
     const { data: user, error } = await supabase
@@ -26,27 +24,18 @@ const verificarAuth = async (req, res, next) => {
       .single();
 
     if (error || !user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Usuario no encontrado',
-      });
+      return unauthorized(res, 'Usuario no encontrado');
     }
 
     if (!user.activo) {
-      return res.status(403).json({
-        success: false,
-        error: 'Usuario desactivado',
-      });
+      return forbidden(res, 'Usuario desactivado');
     }
 
     req.user = user;
     next();
   } catch (err) {
     console.error('[auth.middleware] Error:', err.message);
-    res.status(401).json({
-      success: false,
-      error: 'Error de autenticación',
-    });
+    unauthorized(res, 'Error de autenticación');
   }
 };
 
@@ -58,16 +47,10 @@ const verificarAuth = async (req, res, next) => {
 const verificarRol = (...rolesPermitidos) => {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Autenticación requerida',
-      });
+      return unauthorized(res, 'Autenticación requerida');
     }
     if (!rolesPermitidos.includes(req.user.rol_id)) {
-      return res.status(403).json({
-        success: false,
-        error: 'No tiene permisos para esta acción',
-      });
+      return forbidden(res, 'No tiene permisos para esta acción');
     }
     next();
   };
@@ -79,19 +62,13 @@ const verificarRol = (...rolesPermitidos) => {
 const verificarPropietarioOManager = (paramId = 'id') => {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Autenticación requerida',
-      });
+      return unauthorized(res, 'Autenticación requerida');
     }
     const recursoId = parseInt(req.params[paramId], 10);
     const esManager = req.user.rol_id === ROLES.MANAGER;
     const esPropietario = req.user.id === recursoId;
     if (!esManager && !esPropietario) {
-      return res.status(403).json({
-        success: false,
-        error: 'No tiene permisos para acceder a este recurso',
-      });
+      return forbidden(res, 'No tiene permisos para acceder a este recurso');
     }
     next();
   };

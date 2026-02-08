@@ -2,6 +2,7 @@ const { supabase } = require('../config/supabase');
 const { ROLES, ESTADOS_RESERVA } = require('../utils/constants');
 const reservasService = require('../services/reservas.service');
 const { fechaHoy, sumarDias } = require('../utils/date.utils');
+const { error: sendError, notFound, forbidden } = require('../utils/responses');
 
 // Helper: solo el dueño de la reserva o un manager pueden modificar (fuera del objeto para no depender de "this" en rutas)
 async function assertPuedeModificarReserva(req, id) {
@@ -41,7 +42,7 @@ const reservasController = {
       if (error) throw error;
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -65,14 +66,14 @@ const reservasController = {
         .single();
 
       if (error) throw error;
-      if (!data) return res.status(404).json({ error: 'Reserva no encontrada' });
+      if (!data) return notFound(res, 'Reserva no encontrada');
       if (!esManager && data.usuario_id !== req.user.id) {
-        return res.status(403).json({ error: 'No tiene permisos para ver esta reserva' });
+        return forbidden(res, 'No tiene permisos para ver esta reserva');
       }
 
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -99,33 +100,33 @@ const reservasController = {
       const diasMax = parseInt(await reservasService.obtenerParametro('dias_anticipo_reserva_max'), 10) || 4;
       const maxFecha = sumarDias(fechaHoy(), diasMax);
       if (fecha > maxFecha) {
-        return res.status(400).json({ error: `La reserva no puede ser más de ${diasMax} días desde hoy` });
+        return sendError(res, `La reserva no puede ser más de ${diasMax} días desde hoy`, 400);
       }
 
       const duracion = parseInt(duracion_estimada_minutos, 10) || 120;
       const validacion = await reservasService.validarReservaNoAntesDelCierre(fecha, hora, duracion);
       if (!validacion.valido) {
-        return res.status(400).json({ error: validacion.error });
+        return sendError(res, validacion.error, 400);
       }
 
       const ids = Array.isArray(mesa_ids) && mesa_ids.length > 0
         ? mesa_ids
         : (mesa_id ? [mesa_id] : []);
       if (ids.length === 0) {
-        return res.status(400).json({ error: 'Se requiere al menos una mesa (mesa_id o mesa_ids)' });
+        return sendError(res, 'Se requiere al menos una mesa (mesa_id o mesa_ids)', 400);
       }
       const primeraMesaId = ids[0];
 
       const esManager = req.user?.rol_id === ROLES.MANAGER;
       const esPorLlamada = Boolean(reserva_por_llamada);
       if (esPorLlamada && !esManager) {
-        return res.status(403).json({ error: 'Solo el administrador puede registrar reservas por llamada' });
+        return forbidden(res, 'Solo el administrador puede registrar reservas por llamada');
       }
       if (esPorLlamada) {
         const nombre = (nombre_cliente && String(nombre_cliente).trim()) || '';
         const telefono = (telefono_cliente && String(telefono_cliente).trim()) || '';
         if (!nombre || !telefono) {
-          return res.status(400).json({ error: 'En reserva por llamada son obligatorios el nombre y el teléfono del cliente' });
+          return sendError(res, 'En reserva por llamada son obligatorios el nombre y el teléfono del cliente', 400);
         }
       }
 
@@ -191,7 +192,7 @@ const reservasController = {
 
       res.status(201).json({ reserva: reservaActualizada, pago });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -200,7 +201,7 @@ const reservasController = {
     try {
       const { id } = req.params;
       const fail = await assertPuedeModificarReserva(req, id);
-      if (fail.error) return res.status(fail.status).json({ error: fail.error });
+      if (fail.error) return sendError(res, fail.error, fail.status);
 
       const { fecha, hora, cantidad_personas, mesa_id, notas } = req.body;
 
@@ -214,7 +215,7 @@ const reservasController = {
       if (error) throw error;
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -223,7 +224,7 @@ const reservasController = {
     try {
       const { id } = req.params;
       const fail = await assertPuedeModificarReserva(req, id);
-      if (fail.error) return res.status(fail.status).json({ error: fail.error });
+      if (fail.error) return sendError(res, fail.error, fail.status);
 
       const { data, error } = await supabase
         .from('reservas')
@@ -235,7 +236,7 @@ const reservasController = {
       if (error) throw error;
       res.json({ message: 'Reserva cancelada', reserva: data });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -244,14 +245,14 @@ const reservasController = {
     try {
       const { id } = req.params;
       const fail = await assertPuedeModificarReserva(req, id);
-      if (fail.error) return res.status(fail.status).json({ error: fail.error });
+      if (fail.error) return sendError(res, fail.error, fail.status);
 
       const { data: reserva } = await supabase
         .from('reservas')
         .select('fecha, hora, duracion_estimada_minutos, mesa_id')
         .eq('id', id)
         .single();
-      if (!reserva) return res.status(404).json({ error: 'Reserva no encontrada' });
+      if (!reserva) return notFound(res, 'Reserva no encontrada');
 
       let mesaIds = [reserva.mesa_id];
       try {
@@ -274,7 +275,7 @@ const reservasController = {
       if (error) throw error;
       res.json({ message: 'Reserva confirmada', reserva: data });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -283,7 +284,7 @@ const reservasController = {
     try {
       const { id } = req.params;
       const fail = await assertPuedeModificarReserva(req, id);
-      if (fail.error) return res.status(fail.status).json({ error: fail.error });
+      if (fail.error) return sendError(res, fail.error, fail.status);
 
       const hasta = new Date(Date.now() + 15 * 60 * 1000);
       const { data, error } = await supabase
@@ -296,7 +297,7 @@ const reservasController = {
       if (error) throw error;
       res.json({ message: 'Gracia de 15 min iniciada', reserva: data, gracia_hasta: hasta.toISOString() });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -305,12 +306,12 @@ const reservasController = {
     try {
       const { id } = req.params;
       const fail = await assertPuedeModificarReserva(req, id);
-      if (fail.error) return res.status(fail.status).json({ error: fail.error });
+      if (fail.error) return sendError(res, fail.error, fail.status);
 
       const { data: r } = await supabase.from('reservas').select('estado_id, gracia_hasta').eq('id', id).single();
-      if (!r) return res.status(404).json({ error: 'Reserva no encontrada' });
+      if (!r) return notFound(res, 'Reserva no encontrada');
       if (r.estado_id !== ESTADOS_RESERVA.EN_GRACIA) {
-        return res.status(400).json({ error: 'La reserva no está en período de gracia' });
+        return sendError(res, 'La reserva no está en período de gracia', 400);
       }
 
       try {
@@ -328,7 +329,7 @@ const reservasController = {
       const { data: reserva } = await supabase.from('reservas').select('*').eq('id', id).single();
       res.json({ message: 'Gracia expirada; mesas liberadas', reserva });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -337,7 +338,7 @@ const reservasController = {
     try {
       const { id } = req.params;
       const fail = await assertPuedeModificarReserva(req, id);
-      if (fail.error) return res.status(fail.status).json({ error: fail.error });
+      if (fail.error) return sendError(res, fail.error, fail.status);
 
       try {
         await reservasService.liberarAsignacionMesa(id);
@@ -353,7 +354,7 @@ const reservasController = {
       if (error) throw error;
       res.json({ message: 'Reserva marcada como no-show', reserva: data });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -362,7 +363,7 @@ const reservasController = {
     try {
       const { id } = req.params;
       const fail = await assertPuedeModificarReserva(req, id);
-      if (fail.error) return res.status(fail.status).json({ error: fail.error });
+      if (fail.error) return sendError(res, fail.error, fail.status);
       const { monto_cobrado, anticipo_aplicado, metodo_pago_id } = req.body;
 
       // 0. Liberar asignaciones de mesa para que las mesas vuelvan a estado disponible
@@ -401,7 +402,7 @@ const reservasController = {
       
       res.json({ message: 'Reserva completada', reserva, pago_cuenta_final: pago });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   }
 };

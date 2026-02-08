@@ -3,6 +3,7 @@ const { supabase } = require('../config/supabase');
 const { ROLES } = require('../utils/constants');
 const { createToken, resolveUserIdFromHeader } = require('../utils/token.utils');
 const { emailService } = require('../services');
+const { success: sendSuccess, created, error: sendError, notFound, unauthorized, forbidden, conflict } = require('../utils/responses');
 
 /** Genera un código alfanumérico de 6 caracteres */
 function generarCodigoVerificacion() {
@@ -42,7 +43,7 @@ const authController = {
       const { email, password, nombre, apellido, telefono } = req.body;
 
       if (!email || !password || !nombre) {
-        return res.status(400).json({ success: false, error: 'Email, contraseña y nombre son obligatorios' });
+        return sendError(res, 'Email, contraseña y nombre son obligatorios', 400);
       }
 
       const emailNormalizado = email.trim().toLowerCase();
@@ -109,7 +110,7 @@ const authController = {
         },
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -119,7 +120,7 @@ const authController = {
       const { username, password } = req.body;
 
       if (!username || !password) {
-        return res.status(400).json({ success: false, error: 'Usuario y contraseña requeridos' });
+        return sendError(res, 'Usuario y contraseña requeridos', 400);
       }
 
       const usuarioIngresado = (typeof username === 'string' ? username : '').trim();
@@ -132,7 +133,7 @@ const authController = {
         .single();
 
       if (error || !user) {
-        return res.status(401).json({ success: false, error: 'Credenciales incorrectas' });
+        return unauthorized(res, 'Credenciales incorrectas');
       }
 
       let coincide = false;
@@ -143,7 +144,7 @@ const authController = {
         coincide = hash === password;
       }
       if (!coincide) {
-        return res.status(401).json({ success: false, error: 'Credenciales incorrectas' });
+        return unauthorized(res, 'Credenciales incorrectas');
       }
 
       if (!user.email_verificado) {
@@ -182,7 +183,7 @@ const authController = {
         },
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -191,7 +192,7 @@ const authController = {
     try {
       res.json({ success: true, message: 'Sesión cerrada' });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -200,7 +201,7 @@ const authController = {
     try {
       const userId = resolveUserIdFromHeader(req.headers.authorization);
       if (!userId) {
-        return res.status(401).json({ success: false, error: 'Token no proporcionado o inválido' });
+        return unauthorized(res, 'Token no proporcionado o inválido');
       }
 
       const { data: user, error } = await supabase
@@ -211,7 +212,7 @@ const authController = {
         .single();
 
       if (error || !user) {
-        return res.status(401).json({ success: false, error: 'Usuario no encontrado o inactivo' });
+        return unauthorized(res, 'Usuario no encontrado o inactivo');
       }
 
       res.json({
@@ -225,7 +226,7 @@ const authController = {
         email_verificado: user.email_verificado ?? false,
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -234,12 +235,12 @@ const authController = {
     try {
       const userId = resolveUserIdFromHeader(req.headers.authorization);
       if (!userId) {
-        return res.status(401).json({ success: false, error: 'Token no proporcionado o inválido' });
+        return unauthorized(res, 'Token no proporcionado o inválido');
       }
 
       const { codigo } = req.body;
       if (!codigo || typeof codigo !== 'string') {
-        return res.status(400).json({ success: false, error: 'Código de verificación requerido' });
+        return sendError(res, 'Código de verificación requerido', 400);
       }
 
       const codigoNormalizado = codigo.trim().toUpperCase();
@@ -251,7 +252,7 @@ const authController = {
         .single();
 
       if (error || !user) {
-        return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
+        return notFound(res, 'Usuario no encontrado');
       }
 
       if (user.email_verificado) {
@@ -263,12 +264,12 @@ const authController = {
       }
 
       if (user.codigo_verificacion !== codigoNormalizado) {
-        return res.status(400).json({ success: false, error: 'Código de verificación incorrecto' });
+        return sendError(res, 'Código de verificación incorrecto', 400);
       }
 
       const expira = user.codigo_verificacion_expira_en ? new Date(user.codigo_verificacion_expira_en) : null;
       if (expira && expira < new Date()) {
-        return res.status(400).json({ success: false, error: 'El código ha expirado. Solicita uno nuevo.' });
+        return sendError(res, 'El código ha expirado. Solicita uno nuevo.', 400);
       }
 
       const { error: errUpdate } = await supabase
@@ -294,7 +295,7 @@ const authController = {
         user: userResp,
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -303,7 +304,7 @@ const authController = {
     try {
       const userId = resolveUserIdFromHeader(req.headers.authorization);
       if (!userId) {
-        return res.status(401).json({ success: false, error: 'Token no proporcionado o inválido' });
+        return unauthorized(res, 'Token no proporcionado o inválido');
       }
 
       const { data: user, error } = await supabase
@@ -313,7 +314,7 @@ const authController = {
         .single();
 
       if (error || !user) {
-        return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
+        return notFound(res, 'Usuario no encontrado');
       }
 
       if (user.email_verificado) {
@@ -344,7 +345,7 @@ const authController = {
         message: 'Se ha enviado un nuevo código a tu correo',
       });
     } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
+      sendError(res, error.message);
     }
   },
 };

@@ -63,17 +63,24 @@ export const menuApi = {
   getCategorias: () => api.get('/menu/categorias'),
   createCategoria: (data) => api.post('/menu/categorias', data),
   updateCategoria: (id, data) => api.put(`/menu/categorias/${id}`, data),
-  // Platos
+  deleteCategoria: (id) => api.delete(`/menu/categorias/${id}`),
+  // Platos (query: categoria_id, disponible, page, limit)
   getPlatos: (params) => api.get('/menu/platos', { params }),
   getPlatoById: (id) => api.get(`/menu/platos/${id}`),
   createPlato: (data) => api.post('/menu/platos', data),
   updatePlato: (id, data) => api.put(`/menu/platos/${id}`, data),
+  deletePlato: (id) => api.delete(`/menu/platos/${id}`),
   toggleDisponibilidad: (id, disponible) => api.patch(`/menu/platos/${id}/disponibilidad`, { disponible }),
-  // Ingredientes
-  getIngredientes: () => api.get('/menu/ingredientes'),
+  // Ingredientes (incluye alergias asociadas)
+  getIngredientes: (params) => api.get('/menu/ingredientes', { params }),
   createIngrediente: (data) => api.post('/menu/ingredientes', data),
+  updateIngrediente: (id, data) => api.put(`/menu/ingredientes/${id}`, data),
+  deleteIngrediente: (id) => api.delete(`/menu/ingredientes/${id}`),
   // Alergias
   getAlergias: () => api.get('/menu/alergias'),
+  createAlergia: (data) => api.post('/menu/alergias', data),
+  updateAlergia: (id, data) => api.put(`/menu/alergias/${id}`, data),
+  deleteAlergia: (id) => api.delete(`/menu/alergias/${id}`),
   getPlatosSeguros: (usuarioId) => api.get(`/menu/platos-seguros/${usuarioId}`),
 }
 

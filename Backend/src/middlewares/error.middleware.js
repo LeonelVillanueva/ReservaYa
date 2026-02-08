@@ -1,6 +1,7 @@
 /**
  * Middleware para manejo global de errores
  */
+const { error: sendError, notFound, conflict } = require('../utils/responses');
 
 // Clase para errores personalizados de la API
 class ApiError extends Error {
@@ -47,54 +48,33 @@ const errorHandler = (err, req, res, next) => {
 
   // Si es un error de la API
   if (err instanceof ApiError) {
-    return res.status(err.statusCode).json({
-      success: false,
-      error: err.message,
-      details: err.details
-    });
+    return sendError(res, err.message, err.statusCode, err.details);
   }
 
   // Errores de Supabase
   if (err.code) {
     // Error de constraint único
     if (err.code === '23505') {
-      return res.status(409).json({
-        success: false,
-        error: 'El registro ya existe',
-        details: err.details
-      });
+      return conflict(res, 'El registro ya existe');
     }
     // Error de foreign key
     if (err.code === '23503') {
-      return res.status(400).json({
-        success: false,
-        error: 'Referencia inválida',
-        details: err.details
-      });
+      return sendError(res, 'Referencia inválida', 400, err.details);
     }
     // Registro no encontrado
     if (err.code === 'PGRST116') {
-      return res.status(404).json({
-        success: false,
-        error: 'Registro no encontrado'
-      });
+      return notFound(res, 'Registro no encontrado');
     }
   }
 
   // Error genérico
-  res.status(500).json({
-    success: false,
-    error: process.env.NODE_ENV === 'development' ? err.message : 'Error interno del servidor'
-  });
+  const message = process.env.NODE_ENV === 'development' ? err.message : 'Error interno del servidor';
+  sendError(res, message);
 };
 
 // Middleware para rutas no encontradas
 const notFoundHandler = (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'Ruta no encontrada',
-    path: req.originalUrl
-  });
+  notFound(res, `Ruta no encontrada: ${req.originalUrl}`);
 };
 
 module.exports = { ApiError, errorHandler, notFoundHandler };

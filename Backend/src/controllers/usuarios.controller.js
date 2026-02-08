@@ -1,4 +1,5 @@
 const { supabase } = require('../config/supabase');
+const { error: sendError, notFound } = require('../utils/responses');
 
 const usuariosController = {
   // GET /api/usuarios
@@ -15,7 +16,7 @@ const usuariosController = {
       if (error) throw error;
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -34,11 +35,11 @@ const usuariosController = {
         .single();
       
       if (error) throw error;
-      if (!data) return res.status(404).json({ error: 'Usuario no encontrado' });
+      if (!data) return notFound(res, 'Usuario no encontrado');
       
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -57,7 +58,7 @@ const usuariosController = {
       
       res.json(data || { usuario_id: id, mensaje: 'Sin perfil aún' });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -96,7 +97,7 @@ const usuariosController = {
       if (error) throw error;
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -115,7 +116,7 @@ const usuariosController = {
       if (error) throw error;
       res.json(data.map(d => d.alergia));
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -147,7 +148,7 @@ const usuariosController = {
       
       res.json({ message: 'Alergias actualizadas', alergias_ids });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -167,7 +168,7 @@ const usuariosController = {
       
       res.json({ usuario_id: parseInt(id), saldo_puntos: saldo });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -189,7 +190,7 @@ const usuariosController = {
       if (error) throw error;
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   }
 };

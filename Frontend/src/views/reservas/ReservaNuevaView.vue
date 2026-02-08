@@ -1,7 +1,8 @@
 <template>
   <MainLayout>
-    <div class="max-w-xl mx-auto px-4 py-8">
-      <div class="card p-6">
+    <div class="max-w-5xl mx-auto px-4 py-8">
+      <div class="flex flex-col lg:flex-row gap-6 items-start">
+      <div class="card p-6 flex-1 w-full lg:max-w-xl">
         <div class="flex items-center gap-3 mb-6">
           <router-link to="/inicio" class="text-gray-500 hover:text-gray-700">← Volver</router-link>
         </div>
@@ -22,19 +23,8 @@
           </label>
         </div>
 
-        <!-- Datos del titular: perfil del usuario o datos del cliente si es por llamada -->
-        <div v-if="!form.reservaPorLlamada" class="mb-5 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 text-sm text-gray-700 leading-tight">
-          <p class="font-medium text-gray-900 text-sm">Reserva a nombre de</p>
-          <p class="mt-0.5 text-sm">{{ authStore.userNombre || '—' }}</p>
-          <p class="mt-1 text-xs text-gray-600">
-            <span v-if="authStore.user?.email">{{ authStore.user.email }}</span>
-            <template v-if="authStore.user?.email && authStore.user?.telefono"> · </template>
-            <span v-if="authStore.user?.telefono">{{ authStore.user.telefono }}</span>
-            <span v-if="!authStore.user?.email && !authStore.user?.telefono">—</span>
-          </p>
-          <p class="mt-0.5 text-xs text-gray-500">Datos de tu perfil.</p>
-        </div>
-        <div v-else class="mb-5 rounded-lg bg-amber-50/80 border border-amber-200 px-3 py-3 text-sm leading-tight">
+        <!-- Datos del titular se muestran en el panel flotante derecho -->
+        <div v-if="form.reservaPorLlamada" class="mb-5 rounded-lg bg-amber-50/80 border border-amber-200 px-3 py-3 text-sm leading-tight">
           <p class="font-medium text-amber-900 text-sm mb-3">Datos del cliente</p>
           <div class="grid grid-cols-1 gap-3">
             <div>
@@ -172,10 +162,6 @@
             />
           </div>
 
-          <div v-if="montoAnticipo !== null" class="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700">
-            Anticipo a abonar: <strong>{{ montoAnticipoFormateado }}</strong>
-          </div>
-
           <div class="flex gap-3 pt-2">
             <button type="submit" class="btn-primary" :disabled="loading || !puedeEnviar || diaCerrado">
               {{ loading ? 'Creando...' : 'Confirmar reserva' }}
@@ -183,6 +169,82 @@
             <router-link to="/inicio" class="btn-secondary">Cancelar</router-link>
           </div>
         </form>
+      </div>
+
+      <!-- Panel flotante: Resumen de reserva -->
+      <div class="w-full lg:w-80 shrink-0 lg:sticky lg:top-6">
+        <div class="card p-5 border border-primary-100/60 shadow-lg bg-gradient-to-b from-primary-50/30 to-white">
+          <h3 class="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            Resumen de reserva
+          </h3>
+
+          <div class="space-y-3">
+            <!-- Titular -->
+            <div>
+              <p class="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Titular</p>
+              <p class="text-sm text-gray-800 font-medium mt-0.5">{{ resumenNombre }}</p>
+              <p v-if="resumenContacto" class="text-xs text-gray-500 mt-0.5">{{ resumenContacto }}</p>
+            </div>
+
+            <div class="border-t border-gray-100" />
+
+            <!-- Fecha y Hora -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <p class="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Fecha</p>
+                <p class="text-sm text-gray-800 mt-0.5 capitalize">{{ resumenFecha }}</p>
+              </div>
+              <div>
+                <p class="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Hora</p>
+                <p class="text-sm text-gray-800 mt-0.5">{{ form.hora || '—' }}</p>
+              </div>
+            </div>
+
+            <!-- Personas -->
+            <div>
+              <p class="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Personas</p>
+              <p class="text-sm text-gray-800 mt-0.5">
+                {{ form.cantidad_personas || '—' }}
+                {{ form.cantidad_personas === 1 ? 'persona' : 'personas' }}
+              </p>
+            </div>
+
+            <!-- Mesa -->
+            <div>
+              <p class="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Mesa asignada</p>
+              <p
+                class="text-sm mt-0.5"
+                :class="resumenMesa === 'Sin asignar' ? 'text-gray-400 italic' : 'text-gray-800'"
+              >{{ resumenMesa }}</p>
+            </div>
+
+            <!-- Notas -->
+            <div v-if="form.notas">
+              <p class="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Notas</p>
+              <p class="text-xs text-gray-600 mt-0.5 italic leading-relaxed">{{ form.notas }}</p>
+            </div>
+
+            <!-- Anticipo -->
+            <div v-if="montoAnticipo !== null" class="pt-2 border-t border-gray-100">
+              <div class="flex items-center justify-between">
+                <p class="text-[11px] font-medium text-gray-400 uppercase tracking-wider">Anticipo</p>
+                <p class="text-base font-bold text-primary-700">{{ montoAnticipoFormateado }}</p>
+              </div>
+            </div>
+
+            <!-- Estado día -->
+            <div v-if="form.fecha && diaCerrado" class="pt-2 border-t border-gray-100">
+              <p class="text-xs text-amber-600 font-medium bg-amber-50 px-2 py-1.5 rounded-lg text-center">
+                Cerrado este día
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       </div>
     </div>
   </MainLayout>
@@ -341,6 +403,39 @@ const montoAnticipoFormateado = computed(() => {
   if (montoAnticipo.value === null || montoAnticipo.value === '') return 'Sin monto configurado'
   const n = parseFloat(montoAnticipo.value)
   return isNaN(n) ? montoAnticipo.value : `$${n.toFixed(2)}`
+})
+
+// === Computados para el panel flotante de resumen ===
+
+const resumenNombre = computed(() => {
+  if (form.value.reservaPorLlamada) {
+    return form.value.nombreCliente?.trim() || 'Sin nombre aún'
+  }
+  return authStore.userNombre || '—'
+})
+
+const resumenContacto = computed(() => {
+  if (form.value.reservaPorLlamada) {
+    if (!form.value.telefonoCliente) return ''
+    return `+${paisSeleccionadoCliente.value.prefijo} ${form.value.telefonoCliente}`
+  }
+  const parts = []
+  if (authStore.user?.email) parts.push(authStore.user.email)
+  if (authStore.user?.telefono) parts.push(authStore.user.telefono)
+  return parts.join(' · ') || ''
+})
+
+const resumenFecha = computed(() => {
+  if (!form.value.fecha) return '—'
+  const d = new Date(form.value.fecha + 'T12:00:00')
+  return d.toLocaleDateString('es-HN', { weekday: 'long', day: 'numeric', month: 'long' })
+})
+
+const resumenMesa = computed(() => {
+  const idx = form.value.opcionIndex !== '' ? Number(form.value.opcionIndex) : (opcionesAsignacion.value.length === 1 ? 0 : -1)
+  const opcion = opcionesAsignacion.value[idx]
+  if (!opcion) return 'Sin asignar'
+  return textoOpcion(opcion)
 })
 
 // Nombre: solo letras (incl. acentos), espacios y apóstrofe; sin números (como en registro)

@@ -1,4 +1,5 @@
 const { supabase } = require('../config/supabase');
+const { error: sendError, notFound } = require('../utils/responses');
 
 const parametrosController = {
   // GET /api/parametros
@@ -12,7 +13,7 @@ const parametrosController = {
       if (error) throw error;
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -28,11 +29,11 @@ const parametrosController = {
         .single();
       
       if (error) throw error;
-      if (!data) return res.status(404).json({ error: 'Parámetro no encontrado' });
+      if (!data) return notFound(res, 'Parámetro no encontrado');
       
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -52,7 +53,7 @@ const parametrosController = {
       if (error) throw error;
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -67,7 +68,7 @@ const parametrosController = {
       if (error) throw error;
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -77,7 +78,7 @@ const parametrosController = {
       const { horarios } = req.body; // Array de { dia_semana, hora_apertura, hora_cierre, activo }
       
       if (!horarios || !Array.isArray(horarios)) {
-        return res.status(400).json({ error: 'Se requiere array de horarios' });
+        return sendError(res, 'Se requiere array de horarios', 400);
       }
       
       // Actualizar cada horario
@@ -103,7 +104,7 @@ const parametrosController = {
       if (error) throw error;
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   }
 };

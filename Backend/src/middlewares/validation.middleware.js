@@ -124,6 +124,38 @@ const validarActualizarParametro = [
   validar
 ];
 
+// === VALIDACIONES PARA ALERGIAS ===
+
+const validarCrearAlergia = [
+  body('nombre').notEmpty().isLength({ max: 100 }).withMessage('nombre requerido, máximo 100 caracteres'),
+  validar
+];
+
+const validarActualizarAlergia = [
+  param('id').isInt({ min: 1 }).withMessage('ID inválido'),
+  body('nombre').notEmpty().isLength({ max: 100 }).withMessage('nombre requerido, máximo 100 caracteres'),
+  validar
+];
+
+// === VALIDACIONES PARA INGREDIENTES ===
+
+const validarCrearIngrediente = [
+  body('nombre').notEmpty().isLength({ max: 200 }).withMessage('nombre requerido, máximo 200 caracteres'),
+  body('es_alergeno').optional().isBoolean().withMessage('es_alergeno debe ser true o false'),
+  body('alergia_ids').optional().isArray().withMessage('alergia_ids debe ser un array'),
+  body('alergia_ids.*').optional().isInt({ min: 1 }).withMessage('Cada alergia_id debe ser un número'),
+  validar
+];
+
+const validarActualizarIngrediente = [
+  param('id').isInt({ min: 1 }).withMessage('ID inválido'),
+  body('nombre').optional().notEmpty().isLength({ max: 200 }).withMessage('nombre máximo 200 caracteres'),
+  body('es_alergeno').optional().isBoolean().withMessage('es_alergeno debe ser true o false'),
+  body('alergia_ids').optional().isArray().withMessage('alergia_ids debe ser un array'),
+  body('alergia_ids.*').optional().isInt({ min: 1 }).withMessage('Cada alergia_id debe ser un número'),
+  validar
+];
+
 // === VALIDACIONES GENÉRICAS ===
 
 const validarId = [
@@ -143,6 +175,11 @@ module.exports = {
   // Menú
   validarCrearPlato,
   validarCrearCategoria,
+  validarCrearIngrediente,
+  validarActualizarIngrediente,
+  // Alergias
+  validarCrearAlergia,
+  validarActualizarAlergia,
   // Pedidos
   validarCrearPedido,
   validarCambiarEstadoPedido,

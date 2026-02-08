@@ -6,11 +6,11 @@
         <h2 class="text-lg font-bold text-gray-900">Nuestro Menú</h2>
         <p class="text-sm text-gray-500">Descubre lo que tenemos para ti</p>
       </div>
-      <span v-if="!loading" class="text-xs text-gray-400">{{ platosFiltrados.length }} platos</span>
+      <span v-if="!loading && authStore.esManager" class="text-xs text-gray-400">{{ platosFiltrados.length }} platos</span>
     </div>
 
     <!-- Filtros por categoría (pills) -->
-    <div v-if="categorias.length > 1" class="flex flex-wrap gap-2 mb-5">
+    <div v-if="menuStore.categorias.length > 1" class="flex flex-wrap gap-2 mb-5">
       <button
         type="button"
         class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
@@ -22,7 +22,7 @@
         Todos
       </button>
       <button
-        v-for="cat in categorias"
+        v-for="cat in menuStore.categorias"
         :key="cat.id"
         type="button"
         class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
@@ -92,27 +92,26 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { menuApi } from '@/api'
+import { useMenuStore } from '@/stores/menu'
+import { useAuthStore } from '@/stores/auth'
 
-const platos = ref([])
-const categorias = ref([])
+const menuStore = useMenuStore()
+const authStore = useAuthStore()
 const loading = ref(true)
 const categoriaActiva = ref(null)
 
 const platosFiltrados = computed(() => {
-  if (!categoriaActiva.value) return platos.value
-  return platos.value.filter(p => p.categoria_id === categoriaActiva.value)
+  if (!categoriaActiva.value) return menuStore.platos
+  return menuStore.platos.filter(p => p.categoria_id === categoriaActiva.value)
 })
 
 async function cargar() {
   loading.value = true
   try {
-    const [platosData, categoriasData] = await Promise.all([
-      menuApi.getPlatos({ disponible: true }),
-      menuApi.getCategorias(),
+    await Promise.all([
+      menuStore.fetchPlatos({ disponible: true }),
+      menuStore.fetchCategorias(),
     ])
-    platos.value = Array.isArray(platosData) ? platosData : []
-    categorias.value = Array.isArray(categoriasData) ? categoriasData : []
   } catch (err) {
     console.error('Error cargando menú:', err)
   } finally {

@@ -1,4 +1,5 @@
 const { supabase } = require('../config/supabase');
+const { success, created, error: sendError, notFound } = require('../utils/responses');
 
 const pedidosController = {
   // GET /api/pedidos
@@ -23,7 +24,7 @@ const pedidosController = {
       if (error) throw error;
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -44,7 +45,7 @@ const pedidosController = {
         .single();
       
       if (errPedido) throw errPedido;
-      if (!pedido) return res.status(404).json({ error: 'Pedido no encontrado' });
+      if (!pedido) return notFound(res, 'Pedido no encontrado');
       
       // Obtener detalle
       const { data: detalle, error: errDetalle } = await supabase
@@ -59,7 +60,7 @@ const pedidosController = {
       
       res.json({ ...pedido, detalle });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -112,7 +113,7 @@ const pedidosController = {
       
       res.status(201).json(pedido);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -123,7 +124,7 @@ const pedidosController = {
       const { items } = req.body;
       
       if (!items || items.length === 0) {
-        return res.status(400).json({ error: 'Se requieren items' });
+        return sendError(res, 'Se requieren items', 400);
       }
       
       // Obtener precios
@@ -153,7 +154,7 @@ const pedidosController = {
       if (error) throw error;
       res.status(201).json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -165,7 +166,7 @@ const pedidosController = {
       
       const estadosValidos = ['recibido', 'en_preparacion', 'servido'];
       if (!estadosValidos.includes(estado)) {
-        return res.status(400).json({ error: 'Estado no válido' });
+        return sendError(res, 'Estado no válido', 400);
       }
       
       const { data, error } = await supabase
@@ -178,7 +179,7 @@ const pedidosController = {
       if (error) throw error;
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -200,7 +201,7 @@ const pedidosController = {
       
       res.json({ pedido_id: parseInt(id), total });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   }
 };

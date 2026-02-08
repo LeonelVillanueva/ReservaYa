@@ -1,5 +1,6 @@
 const { supabase } = require('../config/supabase');
 const reservasService = require('../services/reservas.service');
+const { success, created, error: sendError, notFound } = require('../utils/responses');
 
 const mesasController = {
   // GET /api/mesas
@@ -13,7 +14,7 @@ const mesasController = {
       if (error) throw error;
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -56,7 +57,7 @@ const mesasController = {
 
       res.json(result);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -65,7 +66,7 @@ const mesasController = {
     try {
       const { fecha, hora, cantidad_personas, duracion = 120 } = req.query;
       if (!fecha || !hora) {
-        return res.status(400).json({ error: 'Se requiere fecha y hora' });
+        return sendError(res, 'Se requiere fecha y hora', 400);
       }
       const horaNorm = hora.length === 5 ? `${hora}:00` : hora;
       const resultado = await reservasService.getOpcionesAsignacion(
@@ -76,7 +77,7 @@ const mesasController = {
       );
       res.json(resultado);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -86,7 +87,7 @@ const mesasController = {
       const { fecha, hora, duracion = 120, capacidad_minima } = req.query;
       
       if (!fecha || !hora) {
-        return res.status(400).json({ error: 'Se requiere fecha y hora' });
+        return sendError(res, 'Se requiere fecha y hora', 400);
       }
       
       // Obtener todas las mesas activas
@@ -128,7 +129,7 @@ const mesasController = {
       
       res.json(mesasDisponibles);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -144,11 +145,11 @@ const mesasController = {
         .single();
       
       if (error) throw error;
-      if (!data) return res.status(404).json({ error: 'Mesa no encontrada' });
+      if (!data) return notFound(res, 'Mesa no encontrada');
       
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -166,7 +167,7 @@ const mesasController = {
       if (error) throw error;
       res.status(201).json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -186,7 +187,7 @@ const mesasController = {
       if (error) throw error;
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -203,7 +204,7 @@ const mesasController = {
       if (error) throw error;
       res.json({ message: 'Mesa eliminada' });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   },
 
@@ -228,7 +229,7 @@ const mesasController = {
       if (error) throw error;
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      sendError(res, error.message);
     }
   }
 };
