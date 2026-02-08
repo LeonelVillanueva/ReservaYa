@@ -2,7 +2,7 @@ const { supabaseAdmin } = require('../config/supabase');
 
 const BUCKET = 'IMG_REST';
 
-const CARPETAS_PERMITIDAS = ['platos', 'perfiles', 'restaurante'];
+const CARPETAS_PERMITIDAS = ['platos', 'perfiles', 'restaurante', 'comprobantes'];
 
 const TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 

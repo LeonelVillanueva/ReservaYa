@@ -26,7 +26,7 @@ const parametrosController = {
         .from('parametros')
         .select('*')
         .eq('clave', clave)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
       if (!data) return notFound(res, 'Parámetro no encontrado');

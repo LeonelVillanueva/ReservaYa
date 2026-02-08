@@ -126,6 +126,20 @@ export const storageApi = {
   },
 }
 
+export const pagosApi = {
+  getById: (id) => api.get(`/pagos/${id}`),
+  verificarComprobante: (pagoId, file) => {
+    const formData = new FormData()
+    formData.append('comprobante', file)
+    return api.post(`/pagos/${pagoId}/verificar-comprobante`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 30000,
+    })
+  },
+  getPendientesRevision: () => api.get('/pagos/pendientes-revision'),
+  revisionManual: (id, data) => api.patch(`/pagos/${id}/revision-manual`, data),
+}
+
 export const usuariosApi = {
   getById: (id) => api.get(`/usuarios/${id}`),
   getPerfil: (id) => api.get(`/usuarios/${id}/perfil`),

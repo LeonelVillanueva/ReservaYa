@@ -68,6 +68,12 @@ const router = createRouter({
           name: 'admin-menu',
           component: () => import('@/views/manager/MenuView.vue'),
           meta: { title: 'Menú', requiresAuth: true, requiresManager: true }
+        },
+        {
+          path: 'revision-pagos',
+          name: 'admin-revision-pagos',
+          component: () => import('@/views/manager/RevisionPagosView.vue'),
+          meta: { title: 'Revisión de pagos', requiresAuth: true, requiresManager: true }
         }
       ]
     },

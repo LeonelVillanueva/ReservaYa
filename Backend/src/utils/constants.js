@@ -9,7 +9,8 @@ const ESTADOS_RESERVA = {
   CANCELADA: 3,
   COMPLETADA: 4,
   NO_SHOW: 5,
-  EN_GRACIA: 6
+  EN_GRACIA: 6,
+  PENDIENTE_PAGO: 7
 };
 
 const ESTADOS_RESERVA_NOMBRES = {
@@ -18,7 +19,8 @@ const ESTADOS_RESERVA_NOMBRES = {
   3: 'cancelada',
   4: 'completada',
   5: 'no_show',
-  6: 'en_gracia'
+  6: 'en_gracia',
+  7: 'pendiente_pago'
 };
 
 // Roles (deben coincidir con roles en BD)
@@ -45,7 +47,8 @@ const ESTADOS_PAGO = {
   PENDIENTE: 'pendiente',
   COMPLETADO: 'completado',
   FALLIDO: 'fallido',
-  REEMBOLSADO: 'reembolsado'
+  REEMBOLSADO: 'reembolsado',
+  PENDIENTE_REVISION: 'pendiente_revision'
 };
 
 // Métodos de pago (deben coincidir con metodos_pago en BD)

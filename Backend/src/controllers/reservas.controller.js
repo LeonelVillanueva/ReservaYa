@@ -1,5 +1,5 @@
 const { supabase } = require('../config/supabase');
-const { ROLES, ESTADOS_RESERVA } = require('../utils/constants');
+const { ROLES, ESTADOS_RESERVA, METODOS_PAGO, ESTADOS_PAGO } = require('../utils/constants');
 const reservasService = require('../services/reservas.service');
 const { fechaHoy, sumarDias } = require('../utils/date.utils');
 const { error: sendError, notFound, forbidden } = require('../utils/responses');
@@ -133,6 +133,11 @@ const reservasController = {
       const uid = esPorLlamada ? null : (esManager && usuario_id ? usuario_id : req.user.id);
       const cid = esPorLlamada ? req.user.id : (esManager && creado_por_id != null ? creado_por_id : req.user.id);
 
+      // Determinar si es transferencia (requiere verificación de comprobante)
+      const esTransferencia = metodo_pago_id === METODOS_PAGO.TRANSFERENCIA;
+      // Manager por llamada o pago en efectivo no necesita verificación de comprobante
+      const pagoInmediato = !esTransferencia || (esPorLlamada && esManager);
+
       const payloadReserva = {
         usuario_id: uid,
         creado_por_id: cid,
@@ -141,7 +146,7 @@ const reservasController = {
         hora,
         cantidad_personas,
         duracion_estimada_minutos,
-        estado_id: ESTADOS_RESERVA.PENDIENTE,
+        estado_id: pagoInmediato ? ESTADOS_RESERVA.PENDIENTE : ESTADOS_RESERVA.PENDIENTE_PAGO,
         notas
       };
       if (esPorLlamada) {
@@ -173,24 +178,34 @@ const reservasController = {
           tipo: 'anticipo',
           monto: monto_anticipo,
           metodo_pago_id,
-          estado: 'completado',
-          fecha_pago: new Date().toISOString()
+          estado: pagoInmediato ? ESTADOS_PAGO.COMPLETADO : ESTADOS_PAGO.PENDIENTE,
+          fecha_pago: pagoInmediato ? new Date().toISOString() : null
         })
         .select()
         .single();
 
       if (errPago) throw errPago;
 
-      const { data: reservaActualizada, error: errUpdate } = await supabase
-        .from('reservas')
-        .update({ pago_anticipo_id: pago.id })
-        .eq('id', reserva.id)
-        .select()
-        .single();
+      // Solo vincular pago si fue inmediato (transferencia lo vincula tras verificar comprobante)
+      if (pagoInmediato) {
+        const { data: reservaActualizada, error: errUpdate } = await supabase
+          .from('reservas')
+          .update({ pago_anticipo_id: pago.id })
+          .eq('id', reserva.id)
+          .select()
+          .single();
 
-      if (errUpdate) throw errUpdate;
-
-      res.status(201).json({ reserva: reservaActualizada, pago });
+        if (errUpdate) throw errUpdate;
+        res.status(201).json({ reserva: reservaActualizada, pago });
+      } else {
+        // Transferencia: la reserva queda en pendiente_pago hasta que suba comprobante
+        res.status(201).json({
+          reserva,
+          pago,
+          requiere_comprobante: true,
+          mensaje: 'Reserva creada. Suba el comprobante de transferencia para confirmar el pago.',
+        });
+      }
     } catch (error) {
       sendError(res, error.message);
     }

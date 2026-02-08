@@ -26,9 +26,21 @@
                 {{ labelParametro(p.clave) }}
               </label>
 
-              <!-- Monto anticipo: numérico en LPS -->
-              <div v-if="p.clave === 'monto_anticipo'" class="flex items-center gap-2 flex-1 min-w-0">
-                <span class="text-xs text-gray-500 font-medium">LPS</span>
+              <!-- Símbolo de moneda -->
+              <div v-if="p.clave === 'simbolo_moneda'" class="flex items-center gap-2 flex-1 min-w-0">
+                <input
+                  v-model="p.valorEdit"
+                  type="text"
+                  maxlength="5"
+                  placeholder="Ej: L, $, €"
+                  class="input bg-white w-20 text-sm py-1.5 text-center font-semibold"
+                />
+                <span class="text-xs text-gray-400">Se usará en precios y montos (Ej: L 100.00)</span>
+              </div>
+
+              <!-- Monto anticipo: numérico -->
+              <div v-else-if="p.clave === 'monto_anticipo'" class="flex items-center gap-2 flex-1 min-w-0">
+                <span class="text-xs text-gray-500 font-medium">{{ simboloMonedaActual }}</span>
                 <input
                   v-model="p.valorEdit"
                   type="number"
@@ -453,11 +465,17 @@ const successHorarios = ref(false)
 const DIAS_NOMBRES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 const DIAS_CORTOS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 
+const simboloMonedaActual = computed(() => {
+  const p = parametros.value.find(x => x.clave === 'simbolo_moneda')
+  return p?.valorEdit || 'L'
+})
+
 const labelsParametros = {
   monto_anticipo: 'Monto de anticipo',
   horas_anticipo_cancelacion: 'Horas de anticipo para cancelar',
   devolver_anticipo_si_cancela: 'Devolver anticipo si cancela (sí/no)',
   dias_anticipo_reserva_max: 'Días máximos para reservar con anticipación',
+  simbolo_moneda: 'Símbolo de moneda',
 }
 
 function labelParametro(clave) {
@@ -489,17 +507,31 @@ function aplicarMismoHorario() {
   }))
 }
 
+// Parámetros que deben existir siempre con sus valores por defecto
+const PARAMETROS_DEFAULTS = {
+  simbolo_moneda: 'L',
+}
+
 async function cargarParametros() {
   loadingParams.value = true
   errorParams.value = ''
   try {
     const data = await parametrosApi.getAll()
-    parametros.value = (data || [])
+    const lista = (data || [])
       .filter((p) => !p.clave.startsWith('imagen_') && !p.clave.startsWith('carrusel_'))
       .map((p) => ({
         ...p,
         valorEdit: p.valor != null ? String(p.valor) : '',
       }))
+
+    // Agregar parámetros por defecto si no existen en la BD
+    for (const [clave, valorDefault] of Object.entries(PARAMETROS_DEFAULTS)) {
+      if (!lista.find((p) => p.clave === clave)) {
+        lista.push({ clave, valor: valorDefault, valorEdit: valorDefault })
+      }
+    }
+
+    parametros.value = lista
   } catch (err) {
     errorParams.value = err?.error || err?.message || 'Error al cargar parámetros'
   } finally {

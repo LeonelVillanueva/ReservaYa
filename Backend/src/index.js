@@ -17,6 +17,7 @@ const usuariosRoutes = require('./routes/usuarios.routes');
 const parametrosRoutes = require('./routes/parametros.routes');
 const debugRoutes = require('./routes/debug.routes');
 const storageRoutes = require('./routes/storage.routes');
+const pagosRoutes = require('./routes/pagos.routes');
 
 const app = express();
 
@@ -46,7 +47,8 @@ app.get('/', (req, res) => {
       usuarios: '/api/usuarios',
       parametros: '/api/parametros',
       debug: '/api/debug',
-      storage: '/api/storage'
+      storage: '/api/storage',
+      pagos: '/api/pagos'
     }
   });
 });
@@ -70,6 +72,7 @@ app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/parametros', parametrosRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/storage', storageRoutes);
+app.use('/api/pagos', pagosRoutes);
 
 // === MANEJO DE ERRORES ===
 app.use(notFoundHandler);
